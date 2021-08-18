@@ -55,7 +55,7 @@ class Controller(object):
         self.nu = 0.12
         self.gamma = 0.2
         self.minN = 20
-        self.min_dist = 128
+        self.min_dist = 142
         self.cvs = 5
         self.find_focal_clusters = False
         self.focal_minN = 5
@@ -367,7 +367,7 @@ class Controller(object):
             
             grid = grid_search_one_model(train, test, features=self.selected_features,
                           kernel='rbf', gamma_range=gamma_range,nu_range=nu_range, minN_range=minN_range,
-                          eps = 128, pca=self.use_pca, nPCs = self.nPCs, scale='standard',
+                          eps = self.min_dist, pca=self.use_pca, nPCs = self.nPCs, scale='standard',
                           cross_validate_one_group=True, CVs=self.cvs,
                           focal_cluster=False,focal_minN=5,focal_feature="IntDen",
                           summarize_clusters=True, groupby = ['file'], summary_keys=['gamma','nu','minN'], 
@@ -382,7 +382,7 @@ class Controller(object):
             #run a grid search training on the train data and testing on the test data
             grid = grid_search_one_model(train, test, features=self.selected_features,
                           kernel='rbf', gamma_range=gamma_range,nu_range=nu_range, minN_range=minN_range,
-                          eps = 128, pca=self.use_pca, nPCs = self.nPCs, scale='standard',
+                          eps = self.min_dist, pca=self.use_pca, nPCs = self.nPCs, scale='standard',
                           cross_validate_one_group=False, CVs=self.cvs,
                           focal_cluster=False,focal_minN=5,focal_feature="IntDen",
                           summarize_clusters=True, groupby = ['file'], summary_keys=['gamma','nu','minN'], 

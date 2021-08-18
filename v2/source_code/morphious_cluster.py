@@ -17,8 +17,8 @@ from sklearn.decomposition import PCA
 from sklearn.model_selection import KFold
 
 
-import warnings
-warnings.filterwarnings('error')
+#import warnings
+#warnings.filterwarnings('error')
 
 def standard_scale(train, test, features=["Mean","IntDen","Area"],
                    dropna=True,newcols=True, scale='standard'):
@@ -139,7 +139,7 @@ def dbscan_cluster(data,features=["BX","BY"], minN=20, eps=None, label="proximal
     return result
 
 def process_focal_cluster(df,focal_minN=5,focal_feature="IntDen",focal_thresh=None,return_thresh=False, 
-                          subsetby="proximal_clusters"):
+                          subsetby="proximal_clusters", eps=None):
     '''
     function to identify focal clusters by applying DBSCAN to proximal clusters / outliers which are first thresholded by a cutoff value.
     This cutoff value can be automatically determined by setting focal_thresh to None
@@ -170,7 +170,7 @@ def process_focal_cluster(df,focal_minN=5,focal_feature="IntDen",focal_thresh=No
     print("focal threshold: ", focal_thresh)
     trt_f = trim(df,feature=focal_feature,gt=True,threshold=focal_thresh)
     if len(trt_f) > 0:
-        df.loc[trt_f.index, "focal_clusters"] = dbscan_cluster(trt_f,minN=focal_minN,return_labels=True)
+        df.loc[trt_f.index, "focal_clusters"] = dbscan_cluster(trt_f,minN=focal_minN,return_labels=True, eps=eps)
         df.loc[:,"focal_clusters"] = df["focal_clusters"].fillna(-1)
     else:
         df.loc[:,"focal_clusters"] = -1
@@ -387,7 +387,7 @@ def iter_clustering_one_model(train, test_series, features = ['IntDen','Mean','D
             clusters = clusterer.fit_predict(to_cluster[coords])
             section.loc[to_cluster.index, proximal_cluster_label] = clusters
             if focal_cluster:
-                section = process_focal_cluster(section, focal_feature=focal_feature, focal_minN=focal_minN)
+                section = process_focal_cluster(section, focal_feature=focal_feature, focal_minN=focal_minN, eps=eps)
         test_sections.append(section)
         
     return pd.concat(test_sections).reset_index()

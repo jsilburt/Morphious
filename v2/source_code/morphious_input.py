@@ -303,7 +303,8 @@ def read_mouse_features_file(file, path="",delim="\t", split_by = None):
     f = f"{path}/{file}"
     d = pd.read_csv(f,delimiter=delim)
     if split_by is not None:
-        file = file.split(split_by)[0]
+        file = file.split(split_by)[:-1] #remove _boxsize-boxsize in skeleton path
+        file = f"{split_by}".join(file)
     d.loc[:, 'file'] = file.replace(".txt","") #remove .txt
         
     return d
@@ -401,10 +402,10 @@ def compile_feature_df(
     
     df = all_dfs[0]
     if len(all_dfs) > 1:
-        print('accessed')
+        #print('accessed')
         for df2 in all_dfs[1:]:
             df = pd.merge(df, df2, on=coords+groupby, how="outer")
-            print(df.shape)
+            #print(df.shape)
             
     if cell_count_path:
         df = add_all_cell_data2(df,boxsize=boxsize,nnd=True,slide=_slide,
