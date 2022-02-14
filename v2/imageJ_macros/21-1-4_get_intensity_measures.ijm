@@ -1,18 +1,18 @@
 
+//extract immunofluorescence features
 
-input = "your_path_here/MORPHIOUS_GUI/microglia_sample_data/images/treatment/";
-output = "your_path_here/MORPHIOUS_GUI/microglia_sample_data/features/treatment/intensity/";
-logdir = "your_path_here/MORPHIOUS_GUI/microglia_sample_data/features/treatment/logs/";
-
+input = "your_path_here/microglia_sample_data/images/treatment/";
+output = "your_path_here/microglia_sample_data/features/treatment/intensity/";
+logdir = "your_path_here/microglia_sample_data/features/treatment/logs/";
 
 //other parameters 
-
 boxsize=150; // the size of each box in the feature grid. Lower values generates a more granular grid, higher values generates a more sparse grid.
 
 numOffsets=2; //denotes level of overlap.. 2 = 50%, 3 = 66.6% overlap
 local_thresh_type = "Phansalkar"; 
 radius = 60;
 
+//image preprocessing parameters
 subtract_background = true; //subtract background
 subtract_by = "50"; // amount to subtract by -- input as string for imageJ to interpret
 despeckle = true; // apply 1 round of despeckling
@@ -109,7 +109,7 @@ function round_float(number, ndigits){
 	return y;
 }
 
-function correct_image(subtract,subtract_amount,despeck,contrast, contrast_by){
+function correct_image(subtract,subtract_by,despeck,contrast, contrast_by){
 	if(contrast == true){
 		if (indexOf(contrast_by, "local") >= 0) {
 		//if((contrast_by == "local")==true){
@@ -123,7 +123,7 @@ function correct_image(subtract,subtract_amount,despeck,contrast, contrast_by){
 	}
 		
 	if(subtract == true){
-		run("Subtract Background...", "rolling="+subtract_amount);
+		run("Subtract Background...", "rolling="+subtract_by);
 	}
 	if(despeck == true){
 		run("Despeckle");	
@@ -192,30 +192,15 @@ function main(input, output, logdir, local_thresh_type, radius, subtract_backgro
 	 * 
 	 */
 	setBatchMode(batch);
-	run("Set Measurements...", "area mean standard modal min centroid center perimeter bounding fit shape feret's integrated median skewness kurtosis area_fraction limit nan redirect=None decimal=3");
-
+	run("Set Measurements...", "area mean standard modal min centroid center perimeter bounding fit shape feret's integrated median skewness kurtosis area_fraction limit redirect=None decimal=3");
+	run("Options...", "iterations=1 count=1 black");
+	
 	getDateAndTime(year, month, dayOfWeek, dayOfMonth, hour, minute, second, msec);
 	outputdir = "" + dayOfMonth + "-" + (month + 1) + "-" + year + "_" + hour + "h" + minute + "m" + second + "s";
 	full_output_path = output + "/" + outputdir + "/";
 
 	make_output_directory(full_output_path);
 	
-	
-	logfile = File.open(logdir+"/" + outputdir + "_intensity_feature_log.txt"); 
-	print(logfile, "output directory\t" + outputdir);
-	print(logfile, "local threshold\t" + local_thresh_type);
-	print(logfile, "radius\t" + radius);
-	print(logfile, "subtract_background\t" + subtract_background);
-	print(logfile, "subtract_by\t"	 + subtract_by);
-	print(logfile, "despeckle\t" + despeckle);
-	print(logfile, "contrast\t" + contrast);
-	print(logfile, "contrast_by\t" + contrast_by);
-	print(logfile, "input_dir\t" + input);
-	print(logfile, "boxsize\t" + XY);
-	print(logfile, "numOffsets\t" + numOffsets);
-	File.close(logfile);
-
-
 	grid_wise_threshold=true;
 
 	//threshold_whole_image=true;
@@ -229,7 +214,8 @@ function main(input, output, logdir, local_thresh_type, radius, subtract_backgro
 	
 	for(i=0; i < filelist.length; i++){
 		img = filelist[i];
-		fname = replace(img, ".tif", "");
+		fn_len = parseInt(img.length());
+		filename = substring(img, 0, (fn_len - 4)); //remove .tif for example
 		
 		open(input+"/"+img);
 		//measurement unit, pixel width, pixel height, pixel density
@@ -248,9 +234,24 @@ function main(input, output, logdir, local_thresh_type, radius, subtract_backgro
 				grid_threshold_segment_measure(startX,startY,XY,XY,scale,local_thresh_type,radius,grid_wise_threshold);
 			}
 		}
-		save_image(full_output_path,fname);
+		save_image(full_output_path,filename);
 		reset_();
 	}
+
+	logfile = File.open(logdir+"/" + outputdir + "_intensity_feature_log.txt"); 
+	print(logfile, "output directory\t" + outputdir);
+	print(logfile, "local threshold\t" + local_thresh_type);
+	print(logfile, "radius\t" + radius);
+	print(logfile, "subtract_background\t" + subtract_background);
+	print(logfile, "subtract_by\t"	 + subtract_by);
+	print(logfile, "despeckle\t" + despeckle);
+	print(logfile, "contrast\t" + contrast);
+	print(logfile, "contrast_by\t" + contrast_by);
+	print(logfile, "input_dir\t" + input);
+	print(logfile, "boxsize\t" + XY);
+	print(logfile, "numOffsets\t" + numOffsets);
+	print(logfile, "image scale\t" + scale);
+	File.close(logfile);
 
 	setBatchMode(false);
 }

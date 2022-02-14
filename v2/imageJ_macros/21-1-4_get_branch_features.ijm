@@ -1,51 +1,39 @@
+//Extract branch features
 
-inputdir = "C:/Users/joey_/__spyder_projects/MORPHIOUS_GUI/microglia_sample_data/images/treatment/";
-outputdir = "C:/Users/joey_/__spyder_projects/MORPHIOUS_GUI/microglia_sample_data/features/treatment/skeleton/";
-skeleton_image_dir = "C:/Users/joey_/__spyder_projects/MORPHIOUS_GUI/microglia_sample_data/features/treatment/skeletonized_images/";
-logdir = "C:/Users/joey_/__spyder_projects/MORPHIOUS_GUI/microglia_sample_data/features/treatment/logs/";
+inputdir = "your_path_here/microglia_sample_data/images/treatment/";
+outputdir = "your_path_here/microglia_sample_data/features/treatment/skeleton/";
+skeleton_image_dir = "your_path_here/microglia_sample_data/features/treatment/skeletonized_images/";
+logdir = "your_path_here/microglia_sample_data/features/treatment/logs/";
+
+//grid and threshold parameters
+thresh = "Phansalkar";
+numOffsets = 2;
+autothresh = true;
+local_threshold = true;
+radius = 60;
+
+
+//image preprocessing parameters
+subtract = true;
+subtract_by = "100"; //value to subtract bacground by needs to be string to be read by imageJ macro
+despeckle = true;
+contrast = false;
+contrast_by = "0.3"; //"local_X", e.g., local_2.0 to perform local thresholding
+
 
 boxsize = 150;
 batchmode = true;
 
-main(inputdir, outputdir, skeleton_image_dir, logdir, batchmode, boxsize);
+main(inputdir, outputdir, skeleton_image_dir, logdir, batchmode, boxsize, thresh, numOffsets, autothresh, local_threshold, radius, subtract, subtract_by, contrast, contrast_by, despeckle);
 
-function main(input_dir, output_dir, skeleton_img_dir, logdir, batchmode, xy){
-	dir = "G";
-
-	thresh = "Phansalkar";
-	numOffsets = 2;
-	autothresh = true;
-	local_threshold = true;
-	radius = 60;
-	scale = 1.5; //20x images have a scale of 1.5um per pixel
-
-	background_correct = true;
-	subtract = true;
-	subtract_by = "100"; //value to subtract bacground by needs to be string to be read by imageJ macro
-	contrast = false;
-	contrast_by = "0.3";
-	despeckle = true;
+function main(input_dir, output_dir, skeleton_img_dir, logdir, batchmode, xy, thresh, numOffsets, autothresh, local_threshold, radius, subtract, subtract_by, contrast, contrast_by, despeckle){
 
 	getDateAndTime(year, month, dayOfWeek, dayOfMonth, hour, minute, second, msec);
 	output_subdir = "" + dayOfMonth + "-" + (month + 1) + "-" + year + "_" + hour + "h" + minute + "m" + second + "s";
 	full_output_path = output_dir + "/" + output_subdir + "/";
 
 	make_output_directory(full_output_path);
-	
-	logfile = File.open(logdir+"/"+ output_subdir + "skeletal_branching_log.txt"); 
-	print(logfile, "date\t" + year+"/"+month+"/"+dayOfMonth);
-	print(logfile, "thresh\t" + thresh);
-	print(logfile, "radius\t" + radius);
-	print(logfile, "subtract_background\t" + subtract);
-	print(logfile, "subtract_by\t"	 + subtract_by);
-	print(logfile, "despeckle\t" + despeckle);
-	print(logfile, "contrast\t" + contrast);
-	print(logfile, "contrast_by\t" + contrast_by);
-	print(logfile, "input_dir\t" + input_dir);
-	print(logfile, "boxsize\t" + xy);
-	print(logfile, "numOffsets\t" + numOffsets);
-	File.close(logfile);
-
+	run("Options...", "iterations=1 count=1 black");
 	
 	setBatchMode(batchmode);
 
@@ -58,11 +46,12 @@ function main(input_dir, output_dir, skeleton_img_dir, logdir, batchmode, xy){
 		file = filelist[i];
 		img_path = input_dir + filelist[i];
 		open(img_path);
-		fname = replace(file, ".tif", "");
 
-		if(background_correct){
-			correct_image(subtract, subtract_by, despeckle, contrast, contrast_by);
-		}
+		fn_len = parseInt(file.length());
+		fname = substring(file, 0, (fn_len - 4)); //remove .tif for example
+		
+		correct_image(subtract, subtract_by, despeckle, contrast, contrast_by);
+
 		if(autothresh){
 			autothreshold(thresh,local_threshold, radius);
 		} else {
@@ -70,7 +59,8 @@ function main(input_dir, output_dir, skeleton_img_dir, logdir, batchmode, xy){
 		}
 		binarize_skeleton();
 		saveAs("Tiff",skeleton_img_dir+"/"+file);
-				
+		getPixelSize(unit, pw, ph, pd);
+		scale = round_float(1/pw, 2); //scale = pixel per um
 		for(z=0;z<numOffsets;z++){
 			for(j=0;j<numOffsets;j++){
 				//defines top X and top Y of first square in grid -- defines how grid array will look
@@ -83,6 +73,20 @@ function main(input_dir, output_dir, skeleton_img_dir, logdir, batchmode, xy){
 		close();
 		collectGarbageIfNecessary();
 	}
+	logfile = File.open(logdir+"/"+ output_subdir + "skeletal_branching_log.txt"); 
+	print(logfile, "date\t" + year+"/"+month+"/"+dayOfMonth);
+	print(logfile, "thresh\t" + thresh);
+	print(logfile, "radius\t" + radius);
+	print(logfile, "subtract_background\t" + subtract);
+	print(logfile, "subtract_by\t"	 + subtract_by);
+	print(logfile, "despeckle\t" + despeckle);
+	print(logfile, "contrast\t" + contrast);
+	print(logfile, "contrast_by\t" + contrast_by);
+	print(logfile, "input_dir\t" + input_dir);
+	print(logfile, "boxsize\t" + xy);
+	print(logfile, "numOffsets\t" + numOffsets);
+	print(logfile, "image scale\t"+scale);
+	File.close(logfile);
 	setBatchMode(false);
 }
 
@@ -115,7 +119,7 @@ function collectGarbageIfNecessary(){
 	} else collectGarbageCurrentIndex++;
 }
 
-function correct_image(subtract,subtract_amount,despeck,contrast, contrast_by){
+function correct_image(subtract,subtract_by,despeck,contrast, contrast_by){
 	if(contrast == true){
 		if (indexOf(contrast_by, "local") >= 0) {
 		//if((contrast_by == "local")==true){
@@ -128,7 +132,7 @@ function correct_image(subtract,subtract_amount,despeck,contrast, contrast_by){
 		}
 	}
 	if(subtract == true){
-		run("Subtract Background...", "rolling="+subtract_amount);
+		run("Subtract Background...", "rolling="+subtract_by);
 	}
 	if(despeck == true){
 		run("Despeckle");	
@@ -161,7 +165,12 @@ function summarize_complexity(){
 	return summarized_features;
 }
 
-print("HERE1");
+function round_float(number, ndigits){
+	x = d2s(number, ndigits);
+	y = parseFloat(x);
+	return y;
+}
+
 function grid_measure_save(output, filename, startX, startY, gridX, gridY, scale){
 	nBranches = newArray;
 	nJunctions = newArray;

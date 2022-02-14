@@ -1,34 +1,30 @@
 
-input = "C:/Users/joey_/__spyder_projects/MORPHIOUS_GUI/microglia_sample_data/images/treatment/";
-output = "C:/Users/joey_/__spyder_projects/MORPHIOUS_GUI/microglia_sample_data/features/treatment/fractal/";
-binary_dir = "C:/Users/joey_/__spyder_projects/MORPHIOUS_GUI/microglia_sample_data/features/treatment/binarized_images/";
-logdir = "C:/Users/joey_/__spyder_projects/MORPHIOUS_GUI/microglia_sample_data/features/treatment/logs/";
+//extract fractal dimension features
 
+input = "your_path_here/microglia_sample_data/images/treatment/";
+output = "your_path_here/microglia_sample_data/features/treatment/fractal/";
+binary_dir = "your_path_here/microglia_sample_data/features/treatment/binarized_images/";
+logdir = "your_path_here/microglia_sample_data/features/treatment/logs/";
+
+//grid and threshold parameters
 boxsize = 150;
+numOffsets=2; //denotes level of overlap.. 2 = 50%, 3 = 33.3% overlap
+threshtype = "Phansalkar";
+radius = 60;
+
+//image preprocessing parameters
+subtract_background = true; //subtract background
+subtract_by = "50"; // amount to subtract by -- input as string for imageJ to interpret
+despeckle = true; // apply 1 round of despeckling
+contrast = false;
+contrast_by = "0.3"; //either "local_value", or a float (i.e., "0.3") which is used for global thresholding
+
 batchmode = true;
+main(input, output, binary_dir, logdir, batchmode, boxsize, subtract_background, subtract_by, despeckle, contrast, contrast_by, boxsize, numOffsets, threshtype, radius);
 
-main(input, output, binary_dir, logdir, batchmode, boxsize);
-
-function main(input, output, binary_dir, logdir, batchmode, XY){
+function main(input, output, binary_dir, logdir, batchmode, XY, subtract_background, subtract_by, despeckle, contrast, contrast_by, boxsize, numOffsets, threshtype, radius){
 	setBatchMode(batchmode);
-
-	subtract_background = true; //subtract background
-	subtract_by = "100"; // amount to subtract by -- input as string for imageJ to interpret
-	despeckle = true; // apply 1 round of despeckling
-	ref_treatment = "noFUS"; //only used if pairwise == True, uses ref_treatment section as to assess threshold values and apply to treatment
-	exp_treatment = "FUS";
-	pairwise = false;
-	particles = false;
-	contrast = false;
-	contrast_by = "0.3";
-
-
-	
-	scale = 1.5;
-	numOffsets=2; //denotes level of overlap.. 2 = 50%, 3 = 33.3% overlap
-
-	threshtype = "Phansalkar";
-	radius = 60;
+	run("Options...", "iterations=1 count=1 black");
 	
 	print(input);
 	print(output);
@@ -38,30 +34,17 @@ function main(input, output, binary_dir, logdir, batchmode, XY){
 	full_output_path = output + "/" + outputdir + "/";
 
 	make_output_directory(full_output_path);
-
-
-	logfile = File.open(logdir+"/" + outputdir + "_fractal_dimension_log.txt"); 
-	print(logfile, "threshtype\t" + threshtype);
-	print(logfile, "radius\t" + radius);
-	print(logfile, "subtract_background\t" + subtract_background);
-	print(logfile, "subtract_by\t"	 + subtract_by);
-	print(logfile, "despeckle\t" + despeckle);
-	print(logfile, "contrast\t" + contrast);
-	print(logfile, "contrast_by\t" + contrast_by);
-	print(logfile, "input_dir\t" + input);
-	print(logfile, "boxsize\t" + XY);
-	print(logfile, "numOffsets\t" + numOffsets);
-	File.close(logfile);
 	 
 	filelist = getFileList(input);
 	Array.print(filelist);
 
 	for(i=0; i < filelist.length; i++){
-		file_inputs= split(filelist[i],"_");
-		txtfile=replace(filelist[i],".tif",".txt");
-		filename=replace(filelist[i],".tif","");
-		Array.print(file_inputs);
-		process_image(filelist[i],txtfile,input,subtract_background,despeckle,contrast,contrast_by,threshtype,radius);
+		f = filelist[i];
+		fn_len = parseInt(f.length());
+		filename = substring(f, 0, (fn_len - 4)); //remove .tif for example
+		txtfile = filename + ".txt";
+
+		process_image(f,txtfile,input,subtract_background, subtract_by, despeckle,contrast,contrast_by,threshtype,radius);
 		getPixelSize(unit, pw, ph, pd);
 		scale = round_float(1/pw, 2); //scale = pixel per um
 		save_binary(filelist[i],binary_dir);
@@ -77,6 +60,20 @@ function main(input, output, binary_dir, logdir, batchmode, XY){
 		reset_();
 		print("...reset...");
 	}
+	
+	logfile = File.open(logdir+"/" + outputdir + "_fractal_dimension_log.txt"); 
+	print(logfile, "threshtype\t" + threshtype);
+	print(logfile, "radius\t" + radius);
+	print(logfile, "subtract_background\t" + subtract_background);
+	print(logfile, "subtract_by\t"	 + subtract_by);
+	print(logfile, "despeckle\t" + despeckle);
+	print(logfile, "contrast\t" + contrast);
+	print(logfile, "contrast_by\t" + contrast_by);
+	print(logfile, "input_dir\t" + input);
+	print(logfile, "boxsize\t" + XY);
+	print(logfile, "numOffsets\t" + numOffsets);
+	print(logfile, "image scale\t" + scale);
+	File.close(logfile);
 	
 	setBatchMode(false);
 }
@@ -126,9 +123,10 @@ function save_image(output,filename){
 	saveAs("Results", output +"/"+ filename + ".txt");
 }
 
-function correct_image(subtract,despeck,contrast, contrast_by){
-	if(contrast == true) {
+function correct_image(subtract,subtract_by,despeck,contrast, contrast_by){
+	if(contrast == true){
 		if (indexOf(contrast_by, "local") >= 0) {
+		//if((contrast_by == "local")==true){
 			info = split(contrast_by, "_");
 			contrast_by_value = info[1];
 			print("local contrast by..",contrast_by_value);
@@ -137,11 +135,12 @@ function correct_image(subtract,despeck,contrast, contrast_by){
 			run("Enhance Contrast...", "saturated="+contrast_by+" normalize");
 		}
 	}
+		
 	if(subtract == true){
-		run("Subtract Background...", "rolling=50");
+		run("Subtract Background...", "rolling="+subtract_by);
 	}
 	if(despeck == true){
-		run("Despeckle");
+		run("Despeckle");	
 	}
 }
 
@@ -178,10 +177,10 @@ function save_binary(file,output){
 	open(output+file);
 }
 
-function process_image(file,txtfile,input,subtract_background,despeckle,contrast,contrast_by, threshtype, radius){
-	print(input+file);
-	open(input+file);
-	correct_image(subtract_background,despeckle,contrast,contrast_by);
+function process_image(file,txtfile,input,subtract_background, subtract_by, despeckle,contrast,contrast_by, threshtype, radius){
+	print(input+"/"+file);
+	open(input+"/"+file);
+	correct_image(subtract_background,subtract_by, despeckle,contrast,contrast_by);
 	local_threshold(threshtype, radius);
 }
 
