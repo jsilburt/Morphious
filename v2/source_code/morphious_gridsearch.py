@@ -9,6 +9,7 @@ from sklearn.model_selection import ParameterGrid
 from datetime import datetime
 import pandas as pd
 import numpy as np
+import time
 
 import morphious_cluster
 
