@@ -44,7 +44,7 @@ function count_astrocytes(inputDir, outputDir, output_image_dir, log_dir, batchm
 
 	
 	getDateAndTime(year, month, dayOfWeek, dayOfMonth, hour, minute, second, msec);
-	output_subdir = "" + dayOfMonth + "-" + (month + 1) + "-" + year + "_" + hour + "h" + minute + "m" + second + "s";
+	output_subdir = "" + year + "-" + (month + 1) + "-" + dayOfMonth + "_" + hour + "h" + minute + "m" + second + "s";
 	full_output_path = outputDir + "/" + output_subdir + "/";
 
 	make_output_directory(full_output_path);

@@ -4,11 +4,21 @@ Created on Mon Nov 30 14:43:36 2020
 
 @author: joey_
 """
-from morphious_input import *
-from morphious_gui import *
-from morphious_cluster import *
-from morphious_write_clusters import *
-from morphious_gridsearch import *
+# from morphious_input import *
+# from morphious_gui import *
+# from morphious_cluster import *
+# from morphious_write_clusters import *
+# from morphious_gridsearch import *
+
+import morphious_input
+import morphious_gui
+import morphious_cluster
+import morphious_write_clusters
+import morphious_gridsearch
+import morphious_analysis
+
+import pandas as pd
+import numpy as np
 
 class Controller(object):
     
@@ -38,20 +48,36 @@ class Controller(object):
         self.test_option_frame = None
         self.cluster_frame = None
         self.features_frame = None
+        self.focal_feature_frame = None
         self.console_frame = None
         self.grid_search_frame = None
         self.save_frame = None
+        self.analysis_selector_frame = None
+        self.IF_analysis_frame = None
+        self.skel_analysis_frame = None
         
         #paths to feature files
         self.feature_path = None
         self.fractal_path = None
         self.skeleton_path = None
         self.cell_path = None
+        self.user_data_path = None
         self.df_path = None
         self.boxsize = None #boxsize used for extracting features
         self.scale = None #scale of the images
+
+        #paths to analysis files + dfs
+        self.IF_anal_path = None
+        self.skel_anal_path = None
+        self.cell_anal_path = None
+
+        self.IF_anal_df = None
+        self.skel_anal_df = None
+        self.cell_anal_df = None
+
+        self.output_anal_path = None
         
-        #MORPHIOUS clistering hyperparameters
+        #MORPHIOUS clustering hyperparameters
         self.nu = 0.12
         self.gamma = 0.2
         self.minN = 20
@@ -59,6 +85,7 @@ class Controller(object):
         self.cvs = 5
         self.find_focal_clusters = False
         self.focal_minN = 5
+        self.focal_feature = "IntDen"
         
         #features
         self.all_features = None
@@ -90,10 +117,7 @@ class Controller(object):
         
         self.grid_cv_file = None #grid search results for the training set
         self.grid_test_file = None #grid search results for the test set
-
-        
-
-        
+    
     #constructors to open GUI frames
     def open_main_frame(self):
         '''
@@ -105,7 +129,7 @@ class Controller(object):
 
         '''
         if(self.main_frame==None):
-            self.main_frame = main_frame(self)
+            self.main_frame = morphious_gui.main_frame(self)
         
     def open_morphious_frame(self):
         '''
@@ -117,7 +141,7 @@ class Controller(object):
 
         '''
         if self.morphious_frame == None:
-            self.morphious_frame = MORPHIOUS_frame(self)
+            self.morphious_frame = morphious_gui.MORPHIOUS_frame(self)
             
     def open_control_frame(self):
         '''
@@ -129,7 +153,7 @@ class Controller(object):
 
         '''
         if self.train_option_frame == None:
-            self.train_option_frame = load_data_frame(self, train_load=True)
+            self.train_option_frame = morphious_gui.load_data_frame(self, train_load=True)
             
     def open_test_frame(self):
         '''
@@ -141,7 +165,7 @@ class Controller(object):
 
         '''
         if self.test_option_frame == None:
-            self.test_option_frame = load_data_frame(self, train_load=False)
+            self.test_option_frame = morphious_gui.load_data_frame(self, train_load=False)
             
     def open_cluster_frame(self):
         '''
@@ -153,7 +177,7 @@ class Controller(object):
 
         '''
         if self.cluster_frame == None:
-            self.cluster_frame = cluster_frame(self)
+            self.cluster_frame = morphious_gui.cluster_frame(self)
             
     def open_feature_frame(self):
         '''
@@ -165,7 +189,19 @@ class Controller(object):
 
         '''
         if self.features_frame == None:
-            self.features_frame = features_frame(self)
+            self.features_frame = morphious_gui.features_frame(self)
+    
+    def open_focal_feature_frame(self):
+        '''
+        opens the select focal feature frame
+
+        Returns
+        -------
+        None.
+
+        '''
+        if self.focal_feature_frame == None:
+            self.focal_feature_frame = morphious_gui.focal_feature_frame(self)
             
     def open_save_frame(self):
         '''
@@ -177,7 +213,7 @@ class Controller(object):
 
         '''
         if self.save_frame == None:
-            self.save_frame = save_cluster_frame(self)
+            self.save_frame = morphious_gui.save_cluster_frame(self)
             
     def open_grid_search_frame(self):
         '''
@@ -189,33 +225,120 @@ class Controller(object):
 
         '''
         if self.grid_search_frame == None:
-            self.grid_search_frame = grid_search_frame(self)
-            
-    def truncate_label_string(self, labelstr, max_length=25):
-        '''
-        trunates a string and precedes it by "..." for input into a label
+            self.grid_search_frame = morphious_gui.grid_search_frame(self)
 
-        Parameters
-        ----------
-        labelstr : String
-            string to be truncated.
-        max_length : int, optional
-            length of the resultant string. The default is 25.
+    def open_analysis_frame(self):
+        '''
+        opens the post cluster analysis frame
 
         Returns
         -------
-        re : String
-            a string of length 25 preceded by "...".
+        None.
 
         '''
-        re = labelstr
-        if labelstr is not None:
-            if(len(labelstr)>max_length):
-                trunc = "..."+labelstr[-1*max_length+3:-1]+labelstr[-1]
-                print(len(trunc))
-                re = trunc
-        return re
-        
+        if self.analysis_selector_frame == None:
+            self.analysis_selector_frame = morphious_gui.analysis_selector_frame(self)
+    
+    def open_subanalysis_frame(self, analysis_protocol, title='Immunofluorescence analysis', cell_data=False):
+        """opens an analysis protocol frame - either immunofluorescence and cluster, or skeleton and cell analysis
+
+        Args:
+            analysis_protocol (str): analysis protcol, choices are "IF", or "Skeleton"
+            title (str, optional): title of frame. Defaults to 'Immunofluorescence analysis'.
+            cell_data (bool, optional): whether to include a frame for cell analysis. Defaults to False.
+        """
+        if analysis_protocol == 'IF':
+            if self.IF_analysis_frame == None:
+                self.IF_analysis_frame = morphious_gui.subanalysis_frame(self, analysis_protocol, title=title, cell_data=cell_data)
+            else:
+                morphious_gui.close_analysis_frame_warning()
+        if analysis_protocol == 'Skeleton':
+            if self.skel_analysis_frame == None:
+                self.skel_analysis_frame = morphious_gui.subanalysis_frame(self, analysis_protocol, title=title, cell_data=cell_data)
+            else:
+                morphious_gui.close_analysis_frame_warning()
+            
+    #analysis functions
+    def load_anal_data(self, protocol):
+        """ load the data to be analyzed
+        Args:
+            protocol (str): analysis protocol
+
+        Returns:
+            pandas dataframe: dataframe of loaded data
+        """
+        to_return = None
+        if protocol == 'IF':
+            self.IF_anal_df = morphious_input.read_IF_anal_data(path=self.IF_anal_path)
+            df = self.IF_anal_df
+            to_return = df['file'].values
+
+        if protocol == "Skeleton":
+            if self.skel_anal_path is not None:
+                self.skel_anal_df = morphious_input.read_skel_anal_data(path=self.skel_anal_path)
+                to_return = self.skel_anal_df['file'].values #overwritten if both frames are present
+            
+            if self.cell_anal_path is not None:
+                self.cell_anal_df = morphious_input.read_cell_anal_path(path=self.cell_anal_path)
+                to_return = self.cell_anal_df['file'].values #overwritten if both frames are present
+
+            #if both cell and skeleton data is loaded, find a consistent set of filenames for the grouping procedure
+            if ((self.skel_anal_df is not None) and (self.cell_anal_df is not None)):
+                files = np.intersect1d(self.skel_anal_df['file'].values, self.cell_anal_df['file'].values)
+                unmatched_files = np.setdiff1d(self.skel_anal_df['file'].values, self.cell_anal_df['file'].values)
+                if len(files) == 0:
+                    print("ERROR! all skeleton and cell file names do not match")
+                    morphious_gui.error_box(title="Error!", message="Error! Skeleton and cell file names do not match analysis cannot be completed, try running skeleton and cell analyses seperately")
+                elif len(unmatched_files) > 0:
+                    print("WARNING! some skeleton and cell file names do not match")
+                    morphious_gui.warning_box(title="Warning!", message="WARNING! some skeleton and cell file names do not match\n unmatched files are removed from the analysis")
+                    to_return = files
+                else:
+                    to_return = files
+        return to_return
+
+    def perform_skel_and_cell_analysis(self, groups_dict):
+        """perform skeleton and cell analysis
+
+        Args:
+            groups_dict (dictionary): file : group dictionary to regroup analysis
+        """
+        if self.output_anal_path is None:
+            print("Error!")
+            morphious_gui.error_box(title='Error!', message='Select a location to save your analysis file to')
+        else:
+            print('running analysis...')
+            skel_df = None
+            cell_df = None
+            output_str = []
+            if self.skel_anal_df is not None:
+                skel_df = morphious_analysis.regroup_data(self.skel_anal_df, groups_dict)
+                output_str += ['skeleton']
+            if self.cell_anal_df is not None:
+                cell_df = morphious_analysis.regroup_data(self.cell_anal_df, groups_dict)
+                output_str += ['cell']
+            
+            regrouped_df = morphious_analysis.skeleton_and_cell_analysis(skel_df, cell_df)
+            morphious_analysis.save_file(regrouped_df, self.output_anal_path, "_".join(output_str))
+            morphious_gui.complete_box(title='', message='Analysis Complete!')
+
+    def perform_IF_analysis(self, groups_dict):
+        """perform immunofluorescence analysis
+
+        Args:
+            groups_dict (dictionary): file : group dictionary to regroup analysis
+        """
+        if self.output_anal_path is None:
+            print("Error!")
+            morphious_gui.error_box(title='Error!', message='Select a location to save your analysis file to')
+        else:
+            print('running analysis...')
+            regrouped_df = morphious_analysis.regroup_data(self.IF_anal_df, groups_dict)
+            regrouped_df = morphious_analysis.IF_and_cluster_analysis(regrouped_df)
+            morphious_analysis.save_file(regrouped_df, self.output_anal_path, "IF")
+            morphious_gui.complete_box(title='', message='Analysis Complete!')
+
+    #input functions
     def load_data(self, train):
         '''
         load feature data from the selected features paths.
@@ -233,13 +356,25 @@ class Controller(object):
             whether the data has been successfully loaded.
 
         '''
-        if( not (bool(self.feature_path) or bool(self.fractal_path) or bool(self.skeleton_path) or bool(self.cell_path))):
+        if( not (bool(self.feature_path) or bool(self.fractal_path) or bool(self.skeleton_path) or bool(self.cell_path) or bool(self.user_data_path))):
             print('error atleast one path is needed')
             return False
         else:
-            df = compile_feature_df(feature_path=self.feature_path, fractal_path=self.fractal_path, 
-                               skeleton_path=self.skeleton_path, cell_count_path=self.cell_path,
-                               scale = self.scale, boxsize = self.boxsize)
+            if bool(self.user_data_path):
+                # print(self.user_data_path)
+                try:
+                    df = pd.read_csv(self.user_data_path, sep=",")
+                except:
+                    print("error.. not a valid .csv file")
+                    return False
+                if not ("file" in df.columns.values):
+                    print("error.. a 'file' column is not present in the datafile")
+                    return False
+                
+            else:
+                df = morphious_input.compile_feature_df(feature_path=self.feature_path, fractal_path=self.fractal_path, 
+                                   skeleton_path=self.skeleton_path, cell_count_path=self.cell_path,
+                                   scale = self.scale, boxsize = self.boxsize)
             if(train):
                 self.train_df = df
                 if self.df_path is not None:
@@ -249,9 +384,6 @@ class Controller(object):
                 self.test_df = df
                 if self.df_path is not None:
                     self.train_df.to_csv(self.df_path+"/test_data.csv")
-                
-            
-                
             self.reset_file_paths()
             return True
                 
@@ -269,8 +401,10 @@ class Controller(object):
         self.fractal_path = None
         self.skeleton_path = None
         self.cell_path = None
+        self.user_data_path = None
         self.df_path = None
-        
+    
+    #cluster functions
     def return_numeric_features(self):
         '''
         finds all numeric columns present in the training dataframe.
@@ -281,7 +415,7 @@ class Controller(object):
             features of type numeric present in the training dataframe.
 
         '''
-        x = get_numeric_cols(self.train_df)
+        x = morphious_cluster.get_numeric_cols(self.train_df)
         return x.columns.values
         
     def find_clusters(self, cv=False):
@@ -308,7 +442,7 @@ class Controller(object):
             print(f"cross-validation, number of CVs: {self.cvs}")
             
             #find clusters in the train set via cross validation
-            train = iter_all_one_model(self.train_df, None, features=self.selected_features,extra_scalers=["IntDen"],
+            train = morphious_cluster.iter_all_one_model(self.train_df, None, features=self.selected_features,extra_scalers=["IntDen"],
                            cross_validate_one_group=True, CVs = self.cvs,
                        scale='standard',
                            gamma=self.gamma, nu=self.nu, kernel='rbf', minN=self.minN, eps=self.min_dist,
@@ -330,7 +464,7 @@ class Controller(object):
             
             # find clusters in the test data set
             # note, clusters are not searched for in the train set, it is only used for training purposes
-            train, test = iter_all_one_model(self.train_df, self.test_df, features=self.selected_features,extra_scalers=["IntDen"],
+            train, test = morphious_cluster.iter_all_one_model(self.train_df, self.test_df, features=self.selected_features,extra_scalers=["IntDen"],
                            cross_validate_one_group=False, CVs = self.cvs,
                        scale='standard',
                            gamma=self.gamma, nu=self.nu, kernel='rbf', minN=self.minN, eps=self.min_dist,
@@ -340,7 +474,9 @@ class Controller(object):
                           groupby=['file'])
             
             self.test_clusters = test
-            
+        morphious_gui.complete_box(title="Success!", message="Find cluster procedure completed!")
+    
+    #gridsearch functions
     def grid_search(self, cv=False):
         '''
         run a grid search on either the training dataset via cross-validation (cv == True),
@@ -365,7 +501,7 @@ class Controller(object):
             test = None #test input is ignored
             train = self.train_df
             
-            grid = grid_search_one_model(train, test, features=self.selected_features,
+            grid = morphious_gridsearch.grid_search_one_model(train, test, features=self.selected_features,
                           kernel='rbf', gamma_range=gamma_range,nu_range=nu_range, minN_range=minN_range,
                           eps = self.min_dist, pca=self.use_pca, nPCs = self.nPCs, scale='standard',
                           cross_validate_one_group=True, CVs=self.cvs,
@@ -380,7 +516,7 @@ class Controller(object):
             test = self.test_df
             
             #run a grid search training on the train data and testing on the test data
-            grid = grid_search_one_model(train, test, features=self.selected_features,
+            grid = morphious_gridsearch.grid_search_one_model(train, test, features=self.selected_features,
                           kernel='rbf', gamma_range=gamma_range,nu_range=nu_range, minN_range=minN_range,
                           eps = self.min_dist, pca=self.use_pca, nPCs = self.nPCs, scale='standard',
                           cross_validate_one_group=False, CVs=self.cvs,
@@ -389,7 +525,7 @@ class Controller(object):
                           summary_clusters=['proximal_clusters'])
             
             
-        save_grids(grid, self.gridsearch_output_path, cv=cv, nCVs=self.cvs)
+        morphious_gridsearch.save_grids(grid, self.gridsearch_output_path, cv=cv, nCVs=self.cvs)
         
     def find_optimal_params(self):
         '''
@@ -407,11 +543,11 @@ class Controller(object):
         test_df = pd.read_csv(self.grid_test_file)
         
         #resummarize to combine cluster results across images
-        cv_df = resummarize_cluster_grids(cv_df, keys = ['gamma','nu','minN'])
-        test_df = resummarize_cluster_grids(test_df, keys = ['gamma','nu','minN'])
+        cv_df = morphious_gridsearch.resummarize_cluster_grids(cv_df, keys = ['gamma','nu','minN'])
+        test_df = morphious_gridsearch.resummarize_cluster_grids(test_df, keys = ['gamma','nu','minN'])
         
         #compare training and test dataframes and find the best parameters
-        x = find_best_parameters(cv_df, test_df, cluster_metric='proximal_clusters_perc_cluster')
+        x = morphious_gridsearch.find_best_parameters(cv_df, test_df, cluster_metric='proximal_clusters_perc_cluster')
         
         #get the train and test grid search file names
         cv_fname = self.grid_cv_file.split("/")[-1][:-4]
@@ -440,10 +576,9 @@ class Controller(object):
 
         '''
         if self.train_df is not None:
-            train, test = standard_scale(self.train_df.copy(),None,features=features,dropna=True,newcols=True, scale='standard')
-            pca_model = pca_transform_features(train, None, features, nPCs, only_model=True)
+            train, test = morphious_cluster.standard_scale(self.train_df.copy(),None,features=features,dropna=True,newcols=True, scale='standard')
+            pca_model = morphious_cluster.pca_transform_features(train, None, features, nPCs, only_model=True)
             return pca_model.explained_variance_ratio_.sum()
-            #print(pca_model.explained_variance_ratio_, 'explains: ',pca_model.explained_variance_ratio_.sum())
 
         else:
             print("ERROR!")
@@ -475,12 +610,37 @@ class Controller(object):
                 clusters.append("combined_clusters")
                 unclustered_reference = 'combined_clusters'
         else:
-            print("Please select a cluster data frame")
+            morphious_gui.warning_box(title="Warning!", message="Please select a cluster data frame")
             return None
         
-        write_all_cluster_files(df,clusters=clusters,
-                            path=self.output_cluster_path,
+        morphious_write_clusters.write_all_cluster_files(df, clusters=clusters,path=self.output_cluster_path,
                            write_unclustered=True, unclustered_reference = unclustered_reference, unclustered_output="unclustered",
                            groupby = ["file"])
+    
+        #controller functions
+    def truncate_label_string(self, labelstr, max_length=25):
+        '''
+        trunates a string and precedes it by "..." for input into a label
+
+        Parameters
+        ----------
+        labelstr : String
+            string to be truncated.
+        max_length : int, optional
+            length of the resultant string. The default is 25.
+
+        Returns
+        -------
+        re : String
+            a string of length 25 preceded by "...".
+
+        '''
+        re = labelstr
+        if labelstr is not None:
+            if(len(labelstr)>max_length):
+                trunc = "..."+labelstr[-1*max_length+3:-1]+labelstr[-1]
+                print(len(trunc))
+                re = trunc
+        return re
         
         

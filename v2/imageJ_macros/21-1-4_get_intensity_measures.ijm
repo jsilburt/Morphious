@@ -196,7 +196,7 @@ function main(input, output, logdir, local_thresh_type, radius, subtract_backgro
 	run("Options...", "iterations=1 count=1 black");
 	
 	getDateAndTime(year, month, dayOfWeek, dayOfMonth, hour, minute, second, msec);
-	outputdir = "" + dayOfMonth + "-" + (month + 1) + "-" + year + "_" + hour + "h" + minute + "m" + second + "s";
+	outputdir = "" + year + "-" + (month + 1) + "-" + dayOfMonth + "_" + hour + "h" + minute + "m" + second + "s";
 	full_output_path = output + "/" + outputdir + "/";
 
 	make_output_directory(full_output_path);

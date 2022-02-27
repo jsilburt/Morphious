@@ -29,7 +29,7 @@ main(inputdir, outputdir, skeleton_image_dir, logdir, batchmode, boxsize, thresh
 function main(input_dir, output_dir, skeleton_img_dir, logdir, batchmode, xy, thresh, numOffsets, autothresh, local_threshold, radius, subtract, subtract_by, contrast, contrast_by, despeckle){
 
 	getDateAndTime(year, month, dayOfWeek, dayOfMonth, hour, minute, second, msec);
-	output_subdir = "" + dayOfMonth + "-" + (month + 1) + "-" + year + "_" + hour + "h" + minute + "m" + second + "s";
+	output_subdir = "" + year + "-" + (month + 1) + "-" + dayOfMonth + "_" + hour + "h" + minute + "m" + second + "s";
 	full_output_path = output_dir + "/" + output_subdir + "/";
 
 	make_output_directory(full_output_path);

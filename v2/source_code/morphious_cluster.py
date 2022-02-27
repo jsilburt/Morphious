@@ -627,7 +627,6 @@ def col_to_numeric(df,col):
     return df
 '''
 
-
 def get_numeric_cols(df):
     '''
     returns numeric columns in a dataframe

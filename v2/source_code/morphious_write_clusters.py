@@ -71,7 +71,7 @@ def write_all_cluster_files(df,clusters=["proximal_clusters","focal_clusters"],
     df = df.set_index(groupby+clusters)
     curr_time = datetime.now()
     # dd/mm/YY H:M:S
-    dt_string = curr_time.strftime("%d-%m-%Y_%Hh%Mm%Ss")
+    dt_string = curr_time.strftime("%Y-%m-%d_%Hh%Mm%Ss")
     path = path + "/" + dt_string + "/"
     
     unclustered_path = f"{path}/{unclustered_output}/"

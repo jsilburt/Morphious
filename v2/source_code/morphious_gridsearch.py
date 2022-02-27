@@ -7,8 +7,10 @@ Created on Thu Jan  7 16:31:14 2021
 
 from sklearn.model_selection import ParameterGrid
 from datetime import datetime
+import pandas as pd
+import numpy as np
 
-from morphious_cluster import *
+import morphious_cluster
 
 
 def setup_grid_ranges(gamma_range=[0.05,0.15,3],nu_range=[0.08,0.2,6],minN_range=[10,24,7]):
@@ -135,7 +137,7 @@ def grid_search_one_model(train, test, features=[],
         print(f"gamma: {g}, nu: {n}, minN: {m}")
          
         if cross_validate_one_group:
-            clust = iter_all_one_model(train, test, features=features,extra_scalers=[],
+            clust = morphious_cluster.iter_all_one_model(train, test, features=features,extra_scalers=[],
                                cross_validate_one_group=cross_validate_one_group, CVs = CVs,scale=scale,
                                gamma=g, nu=n, kernel='rbf', minN=int(m), eps=eps,
                                focal_cluster=False,focal_minN=5,focal_feature="IntDen",
@@ -144,7 +146,7 @@ def grid_search_one_model(train, test, features=[],
                               groupby=['file'])
             
         else:
-            x, clust = iter_all_one_model(train, test, features=features,extra_scalers=[],
+            x, clust = morphious_cluster.iter_all_one_model(train, test, features=features,extra_scalers=[],
                                cross_validate_one_group=cross_validate_one_group, CVs = CVs,scale=scale,
                                gamma=g, nu=n, kernel='rbf', minN=int(m), eps=eps,
                                focal_cluster=False,focal_minN=5,focal_feature="IntDen",
@@ -168,36 +170,6 @@ def grid_search_one_model(train, test, features=[],
         #print(f"===== TIME FOR ITERATION {time.time()-st} -- #{count_round}/{num_iterations} =====")
         count_round += 1
     return pd.concat(clusters)
-
-
-'''     
-def plot_grid(grids,splitby='gamma',x='minN',y='nu',z='cluster_size',cmap='spectral',vmin=0,vmax=None):
-    splits = grids.index.get_level_values(splitby).unique()
-    fig = plt.figure()
-    grids = grids[z]
-    #print(grids)
-    for plc, s in zip(range(len(splits)),splits):
-        grid = grids.xs(s,level=splitby)
-        grid = grid.reset_index()
-        sub = 100 + len(splits)*10 + 1 +plc
-        ax = fig.add_subplot(sub)
-        #ax.title = s
-        grid = grid.pivot(x, y, z)
-        ax = sns.heatmap(grid,cmap=cmap,vmin=vmin,vmax=vmax)
-    plt.show()
-
-
-def find_top_parameters(sumgrid,control="noFUS",treatment="FUS",maxTreat=True,top=5):
-    con_zeroes = sumgrid.loc[(sumgrid["clusters"]==0) & (sumgrid["Treatment"]==control)].set_index(["gamma","nu","minN"])
-    treat = sumgrid.loc[(sumgrid["Treatment"]==treatment)].set_index(["gamma","nu","minN"])
-    treat_cut = treat.loc[con_zeroes.index,:]
-    return treat_cut.sort_values(by="clusters",ascending=not(maxTreat)).iloc[0:top]
-
-
-def find_best_combo(sumgrids):
-    re = pd.concat(sumgrids,axis=1)
-    print(re)
-'''
 
 def summarize_cluster_grids(clusters,keys=['gamma','nu','min','file'],
                             cluster_types=['proximal_clusters']):
@@ -344,7 +316,7 @@ def save_grids(grid, path, cv=False, nCVs = 5):
     '''
     curr_time = datetime.now()
     
-    dt_string = curr_time.strftime("%d-%m-%Y_%Hh%Mm%Ss")
+    dt_string = curr_time.strftime("%Y-%m-%d_%Hh%Mm%Ss")
     file = dt_string
     if cv:
         file = file + f"_{nCVs}-fold-CV_"
@@ -352,7 +324,4 @@ def save_grids(grid, path, cv=False, nCVs = 5):
         file = file + "_test-dataset_"
     file = file+"_paramater_grid_raw.csv"
     grid.to_csv(path+"/"+file)
-    
-    
-        
     

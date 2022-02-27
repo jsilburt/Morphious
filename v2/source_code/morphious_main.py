@@ -10,6 +10,5 @@ from morphious_controller import *
 
 
 c = Controller()
-#x = main_frame(c)
 
 c.open_main_frame()

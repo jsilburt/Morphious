@@ -58,7 +58,7 @@ function count_microglia(inputDir, output_data_dir, output_image_dir, log_dir, b
 
 	
 	getDateAndTime(year, month, dayOfWeek, dayOfMonth, hour, minute, second, msec);
-	output_subdir = "" + dayOfMonth + "-" + (month + 1) + "-" + year + "_" + hour + "h" + minute + "m" + second + "s";
+	output_subdir = "" + year + "-" + (month + 1) + "-" + dayOfMonth + "_" + hour + "h" + minute + "m" + second + "s";
 	full_output_path = output_data_dir + "/" + output_subdir + "/";
 
 	make_output_directory(full_output_path);

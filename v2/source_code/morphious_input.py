@@ -15,6 +15,8 @@ import gc
 import copy
 #import decimal
 
+import pdb
+
 
       
 '''
@@ -38,7 +40,6 @@ def round_digits(df,features=['BX','BY']):
     -------
     df : pandas dataframe
         dataframe with rounded digits.
-
     '''
     df.loc[:,features] = df[features].astype('float').round(1)
     return df
@@ -88,7 +89,7 @@ def add_all_cell_data2(mice,boxsize=150,
         print(f)
         st = time.time()
         #ms, day, cond, cell, sect = f.split("_")
-        sec = pd.read_csv(path+f,"\t")
+        sec = pd.read_csv(path+f,sep="\t")
         sec = sec.rename(columns={" " : "cellID"})
         sec.loc[:, 'file'] = f.replace(".txt", "")
         if nnd:
@@ -172,7 +173,7 @@ def add_cell_data3(main, cells, indeces=['file'],
     to_add = cells.loc[:, indeces+cell_centers+['Area','Perim.','perim_squared','cellID','nnd']]
     square_length = boxsize / scale 
     skew = boxsize / scale / slide #the magnitude of the translation between boxes
-    print(square_length)
+    #print(square_length)
     
     all_frameshifts = []
     #shift across all possible boxes, and add cells whose center fit within the upper and lower bounds of each box
@@ -415,4 +416,129 @@ def compile_feature_df(
         
     df.loc[:,'boxID'] = df.reset_index().index.values
 
+    return df
+
+
+    ### read post-analysis files ###
+def read_IF_anal_data(path, sep="\t"):
+    """read immunoflourescence data files
+
+    Args:
+        path (str): path to immunofluorescence files
+        sep (str, optional): delimiter of files. Defaults to "\t".
+
+    Returns:
+        pandas dataframe: dataframe of immunofluorescence data
+    """
+    df = pd.concat([read_and_file_stamp(path, f, (i*-1)-1) for i, f in enumerate(os.listdir(path))]).reset_index(drop=True) #open and read files
+    return df
+
+def read_skel_anal_data(path, sep="\t"):
+    """read skeleton data files
+
+    Args:
+        path (str): path to skeleton files
+        sep (str, optional): delimiter of files. Defaults to "\t".
+
+    Returns:
+        pandas dataframe: dataframe of skeleton data
+    """
+    df = pd.concat([read_and_file_stamp(path, f, (i*-1)-1, skel_file=True) 
+        for i, f in enumerate(os.listdir(path))
+        if is_skel_file(f)]
+        ).reset_index(drop=True) #open and read files
+    return df
+
+def read_cell_anal_path(path, sep="\t"):
+    """read cell data files
+
+    Args:
+        path (str): path to cell files
+        sep (str, optional): delimiter of files. Defaults to "\t".
+
+    Returns:
+        pandas dataframe: dataframe of cell data
+    """
+    df = pd.concat([read_and_file_stamp(path, f, (i*-1)-1, cell_file=True) 
+        for i, f in enumerate(os.listdir(path))]
+        ).reset_index(drop=True) #open and read files
+    return df
+
+def read_and_file_stamp(path, f, init_group, sep="\t", skel_file=False, cell_file=False):
+    """read a file and include it's file name as a column
+
+    Args:
+        path (str): path to file
+        f (str): filename
+        init_group (int): initial default analysis grouping
+        sep (str, optional): file str delimiter. Defaults to "\t".
+        skel_file (bool, optional): whether a skeleton file is being loaded. Defaults to False.
+        cell_file (bool, optional): whether a cell file is being loaded. Defaults to False.
+
+    Returns:
+        pandas dataframe: dataframe of data
+    """
+    if skel_file:
+        df = read_skel_file(path, f)
+    elif cell_file:
+        df = read_cell_file(path, f)
+    else:
+        df = pd.read_csv(os.path.join(path, f), sep=sep)
+        df.loc[:, 'file'] = f[:-4]
+    df.loc[:,'analysis_group'] = init_group #default to negative range to reduce the risk of regrouping errors
+    return df
+
+def read_skel_file(path, f, sep="\t"):
+    """read a skeleton file
+
+    Args:
+        path (str): path to file
+        f (str): filename
+        sep (str, optional): file str delimiter. Defaults to "\t".
+
+    Returns:
+        pandas dataframe: dataframe of data
+    """
+    df = pd.read_csv(os.path.join(path, f), sep=sep)
+    fname = f.split("_")[0]
+    df.loc[:, 'TotalBranchLength'] = df['# Branches'].values * df['Average Branch Length']
+    df = df.sum(axis=0)
+    df = df.to_frame().T
+    df.loc[:, 'file'] = fname
+    cols = np.setdiff1d(df.columns.values, np.array(['Average Branch Length'])) #remove average branch length from columns to reduce username confusion
+    return df[cols]
+
+def is_skel_file(file):
+    """determines whether a file is the correct skeleton file to read
+
+    Args:
+        file (str): filename
+
+    Returns:
+        boolean: read file or not
+    """
+    skel_file=False
+    if "rawInfo" in file:
+        skel_file=True
+    return skel_file
+
+def read_cell_file(path, f, sep="\t", xy=['X', 'Y']):
+    """reads and processes a cell file
+    Args:
+        path (str): path to file
+        f (str): filename
+        sep (str, optional): file str delimiter. Defaults to "\t".
+        xy (list, optional): coordinates to determine the nearest neighbout distance. Defaults to ['X', 'Y'].
+
+    Returns:
+        pandas dataframe: dataframe of data
+    """
+    df = pd.read_csv(os.path.join(path, f), sep=sep)
+    nnd_df = construct_nnd_df(df, xy=xy)
+    cell_counts = df.shape[0]
+    df = pd.merge(df, nnd_df, on=xy, how='left')
+    df = df.sum(axis=0)
+    df = df.to_frame().T
+    df.loc[:, 'cell_counts'] = cell_counts
+    df.loc[:, 'file'] = f[:-4]
     return df

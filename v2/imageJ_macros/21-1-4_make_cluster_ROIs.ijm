@@ -14,7 +14,7 @@ function main(batchmode, imagedir, clusterdir, outputpath, clusters){
 	setBatchMode(batchmode); 
 	
 	getDateAndTime(year, month, dayOfWeek, dayOfMonth, hour, minute, second, msec);
-	outputdir = "" + dayOfMonth + "-" + (month + 1) + "-" + year + "_" + hour + "h" + minute + "m" + second + "s";
+	outputdir = "" + year + "-" + (month + 1) + "-" + dayOfMonth + "_" + hour + "h" + minute + "m" + second + "s";
 	print(outputdir);
 
 	full_output_path = outputpath + "/" + outputdir;

@@ -7,7 +7,10 @@ Created on Sun Nov 29 23:09:13 2020
 
 from tkinter import *
 from tkinter import filedialog
+from tkinter import messagebox
+
 import numpy as np
+import math
 
 
              
@@ -88,7 +91,12 @@ class MORPHIOUS_frame(object):
         self.b3 = Button(self.cluster_frame, text="Find Clusters", command=lambda : controller.open_cluster_frame()).grid(row=4,column=0)
         self.b4 = Button(self.cluster_frame, text="Save Clusters", command=lambda : controller.open_save_frame()).grid(row=5,column=0)
         self.b5 = Button(self.cluster_frame, text="Grid Search Parameters", command=lambda : controller.open_grid_search_frame()).grid(row=6,column=0)
-    
+        
+        #post cluster analysis
+        self.analysis_frame = LabelFrame(self.window, text="Post Cluster Analysis", padx=2, pady=2)
+        self.analysis_frame.grid(row=7, column=0)
+        self.b6 = Button(self.analysis_frame, text="Post-Cluster Analysis", command=lambda : controller.open_analysis_frame())
+        self.b6.grid(row=8, column=0)
     
     def on_tl_close(self, controller):
         '''
@@ -133,69 +141,131 @@ class load_data_frame(object):
         
         self.window.title('load data')
         self.window.protocol('WM_DELETE_WINDOW', lambda : self.on_tl_close(controller, train_load))
-        
-        self.feature_frame = LabelFrame(self.window, text='load intensity features')
+        self.morphious_features_frame = LabelFrame(self.window, text='Option 1: load imageJ macro generated features')
+
+        self.feature_frame = LabelFrame(self.morphious_features_frame, text='load intensity features')
         self.feature_dir_button = Button(self.feature_frame, text='select intensity features directory', command= lambda:self.set_feature_path(controller))
         self.feature_dir_label = Label(self.feature_frame, text=controller.feature_path, relief=RIDGE, width=25)
         
-        self.fractal_frame = LabelFrame(self.window, text='load fractal features')
+        self.fractal_frame = LabelFrame(self.morphious_features_frame, text='load fractal features')
         self.fractal_dir_button = Button(self.fractal_frame, text='select fractal features directory', command= lambda:self.set_fractal_path(controller))
         self.fractal_dir_label = Label(self.fractal_frame, text=controller.fractal_path, relief=RIDGE, width=25)
         
-        self.skeleton_frame = LabelFrame(self.window, text='load skeleton features')
+        self.skeleton_frame = LabelFrame(self.morphious_features_frame, text='load skeleton features')
         self.skeleton_dir_button = Button(self.skeleton_frame, text='select skeleton features directory', command= lambda:self.set_skeleton_path(controller))
         self.skeleton_dir_label = Label(self.skeleton_frame, text=controller.skeleton_path, relief=RIDGE, width=25)
         
-        self.cell_frame = LabelFrame(self.window, text='load cell features')
+        self.cell_frame = LabelFrame(self.morphious_features_frame, text='load cell features')
         self.cell_dir_button = Button(self.cell_frame, text='select cell features directory', command= lambda:self.set_cell_path(controller))
         self.cell_dir_label = Label(self.cell_frame, text=controller.cell_path, relief=RIDGE, width=25)
         
-        self.boxsize_label = Label(self.window, text="Enter the box size").grid(row=2, column=0)
+        
+        #load user data frame
+        self.user_features_frame = LabelFrame(self.window, text='Option 2: load your own features (overrides Option 1)')
+        self.user_features_info_button = Button(self.user_features_frame, text='help: loading custom features', command= lambda : self.open_load_user_data_info())
+        self.load_user_feat_button = Button(self.user_features_frame, text='select custom features file', command= lambda : self.set_user_data_path(controller))
+        self.load_user_feat_label = Label(self.user_features_frame, text=controller.user_data_path, relief=RIDGE, width=25)
+
+        #boxsize info
+        self.boxsize_label = Label(self.window, text="Enter the box size")
         self.boxsize_entry = Entry(self.window, width=10)
         
+        #save data frame button
         self.save_df_button = Button(self.window, text="Enter path to save data (optional)", command = lambda : self.set_output_df_dir(controller))
-        self.save_df_button.grid(row=4, column=0)
-        
         self.output_df_dir_label = Label(self.window, text=controller.truncate_label_string(controller.df_path), relief=RIDGE, width=25)
-        self.output_df_dir_label.grid(row=4, column=1)
+        
+
         
         if controller.boxsize is None:
             insert = "150"
         else:
             insert = str(controller.boxsize)
         self.boxsize_entry.insert(END, insert)
-        self.boxsize_entry.grid(row=2, column=1)
+
         
-        self.scale_label = Label(self.window, text="Enter the image scale (um/pixel)").grid(row=3, column=0)
+        self.scale_label = Label(self.window, text="Enter the image scale (um/pixel)")
         self.scale_entry = Entry(self.window, width=10)
         if controller.scale is None:
             insert = "1.5"
         else:
             insert = str(controller.scale)
         self.scale_entry.insert(END, insert)
-        self.scale_entry.grid(row=3, column=1)
         
         self.load_button = Button(self.window, text = 'load data', padx = 50, pady = 10,
                                   command= lambda: self.load_data(controller, train_load))
         
-        
-        index=0
-        #adds all buttos and labels to the grid
-        for frame, button, label in zip([self.feature_frame, self.fractal_frame, self.skeleton_frame, self.cell_frame],
+        self.morphious_features_frame.grid(row=0, column=0, columnspan=4, padx=10, pady=10)
+
+        #adds all buttons and labels to the grid
+        for index, ele in enumerate(zip([self.feature_frame, self.fractal_frame, self.skeleton_frame, self.cell_frame],
                                         [self.feature_dir_button, self.fractal_dir_button, self.skeleton_dir_button, self.cell_dir_button],
-                                        [self.feature_dir_label, self.fractal_dir_label, self.skeleton_dir_label, self.cell_dir_label]):
-            
+                                        [self.feature_dir_label, self.fractal_dir_label, self.skeleton_dir_label, self.cell_dir_label])):
+            frame, button, label = ele
             frame.grid(row=0, column=index)
             button.grid(row=1, column=index)
             label.grid(row=2, column=index)
-            index += 1
-
-
-
-        self.load_button.grid(row=5, column=0, columnspan=4, padx=50)
+            #index += 1
+        
         self.feature_dir_button.grid(row=0, column=0)
         self.feature_dir_label.grid(row=1, column=0)
+
+        self.user_features_frame.grid(row=0, column=5, columnspan=2)
+        self.user_features_info_button.grid(row=1, column=5, columnspan=2)
+        self.load_user_feat_button.grid(row=2, column=5)
+        self.load_user_feat_label.grid(row=2, column=6)
         
+        self.boxsize_label.grid(row=3, column=0)
+        self.boxsize_entry.grid(row=3, column=1)
+
+        self.scale_label.grid(row=4, column=0)
+        self.scale_entry.grid(row=4, column=1)
+        
+        self.save_df_button.grid(row=5, column=0)
+        self.output_df_dir_label.grid(row=5, column=1)
+
+        self.load_button.grid(row=6, column=0, columnspan=4, padx=50)
+
+        
+    def open_load_user_data_info(self):
+        '''
+        opens a message box to provide instructions for data from a user supplied file
+
+        Returns
+        -------
+        None.
+
+        '''
+        messagebox.showinfo("Info", 
+                   """Select a csv file with the choose file dialogue.\n\nThe csv file must have a column called 'file' to distinguish data collected from individual images.
+                   \nThe file must also contain columns "BX" and "BY" to identify the spatial coordinates of gridpoints""")
+    def set_user_data_path(self, controller):
+        '''
+        saves the path to a file containing user supplied feature data
+
+        Parameters
+        ----------
+        controller : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        '''
+        
+        controller.user_data_path = filedialog.askopenfilename(initialdir="", filetypes=[("CSV files", "*.csv")])
+        self.set_user_data_label(controller)
+        self.window.lift()
+    
+    def set_user_data_label(self, controller):
+        """_summary_
+
+        Args:
+            controller (_type_): _description_
+        """
+        self.load_user_feat_label.grid_remove()
+        self.load_user_feat_label = Label(self.user_features_frame, text=controller.truncate_label_string(controller.user_data_path), relief=RIDGE, width=25)
+        self.load_user_feat_label.grid(row=2, column=6)
         
     def set_feature_path(self, controller):
         '''
@@ -358,7 +428,7 @@ class load_data_frame(object):
         controller.df_path = filedialog.askdirectory(initialdir="")
         self.output_df_dir_label.grid_remove()
         self.output_df_dir_label = Label(self.window, text=controller.truncate_label_string(controller.df_path), relief=RIDGE, width=25)
-        self.output_df_dir_label.grid(row=4, column=1)
+        self.output_df_dir_label.grid(row=5, column=1)
         self.window.lift()
     
     def on_tl_close(self, controller, train_load):
@@ -377,11 +447,13 @@ class load_data_frame(object):
         None.
 
         '''
+        controller.reset_file_paths()
         self.window.destroy()
         if(train_load):
             controller.train_option_frame = None
         else:
             controller.test_option_frame = None
+        
         
     def load_data(self, controller, train_load):
         '''
@@ -454,19 +526,25 @@ class cluster_frame(object):
         self.min_dist_input.grid(row=3, column=1)
         self.min_dist_input.insert(END, controller.min_dist)
         
+        self.features_button = Button(self.param_frame, text="Select Features", command=lambda : controller.open_feature_frame())
+        self.features_button.grid(row=4, column=0, columnspan=2)
+        
+        
         self.focal_cluster_bin = BooleanVar()
         self.focal_cluster_check = Checkbutton(self.param_frame, text="find focal clusters", 
                                                variable = self.focal_cluster_bin, 
                                                command=lambda : self.select_focal_clusters(controller))
         self.focal_cluster_check.deselect()
-        self.focal_cluster_check.grid(row=4, column=0, columnspan=2)
+        self.focal_cluster_check.grid(row=5, column=0, columnspan=2)
 
-        
-        self.minN_focal_label = Label(self.param_frame, text="Enter minimum focal cluster size").grid(row=5, column=0)
+        self.minN_focal_label = Label(self.param_frame, text="Enter minimum focal cluster size")
+        self.minN_focal_label.grid(row=6, column=0)
         self.minN_focal_input = Entry(self.param_frame, width=10, state=DISABLED)
-        self.minN_focal_input.grid(row=5, column=1)
+        self.minN_focal_input.grid(row=6, column=1)
         self.minN_focal_input.insert(END, controller.focal_minN)
         
+        self.focal_feature_button = Button(self.param_frame, text="Select Focal Feature", command=lambda : controller.open_focal_feature_frame())
+        self.focal_feature_button.grid(row=7, column=0, columnspan=2)
         
         #self.calc_min_dist = Button(self.window, text="calculate default distance").grid(row=, column=0)
         
@@ -489,8 +567,7 @@ class cluster_frame(object):
         self.test_set_loaded.grid(row=0, column=3)
         
         #buttons
-        self.features_button = Button(self.param_frame, text="Select Features", command=lambda : controller.open_feature_frame())
-        self.features_button.grid(row=6, column=0, columnspan=2)
+
         #self.feature_loaded_label = Label(self.param_frame,text="no features selected")
         #self.feature_loaded_label.grid(row=4, column=1)
         self.save_parameters = Button(self.window, text="Run!", command=lambda: self.find_clusters(controller), padx=25, pady=10).grid(row=5, column=0, columnspan=4)
@@ -579,7 +656,7 @@ class cluster_frame(object):
         '''
         self.minN_focal_input.grid_remove()
         self.minN_focal_input = Entry(self.param_frame, width=10, state=NORMAL)
-        self.minN_focal_input.grid(row=5, column=1)
+        self.minN_focal_input.grid(row=6, column=1)
         self.minN_focal_input.insert(END, controller.focal_minN)
     
     def on_tl_close(self, controller):
@@ -598,7 +675,6 @@ class cluster_frame(object):
         '''
         self.window.destroy()
         controller.cluster_frame = None
-
 
 class features_frame(object):
     def __init__(self, controller):
@@ -791,12 +867,15 @@ class features_frame(object):
         None.
 
         '''
-        nPCs = int(self.nPCs.get())
-        features = self.view_selected_features(controller)
-        variance = float(controller.check_pca_variance(nPCs, features))
-        self.pca_variance_label.grid_remove()
-        self.pca_variance_label = Label(self.pca_frame,text="{:0.5f}".format(variance))
-        self.pca_variance_label.grid(row=row, column=1)
+        try:
+            nPCs = int(self.nPCs.get())
+            features = self.view_selected_features(controller)
+            variance = float(controller.check_pca_variance(nPCs, features))
+            self.pca_variance_label.grid_remove()
+            self.pca_variance_label = Label(self.pca_frame,text="{:0.5f}".format(variance))
+            self.pca_variance_label.grid(row=row, column=1)
+        except:
+            error_box(title='Error!', message='Cannot check PCA variance, did you enter a number of priniciple components?')
 
     def on_tl_close(self, controller):
         '''
@@ -814,6 +893,94 @@ class features_frame(object):
         '''
         self.window.destroy()
         controller.features_frame = None
+
+
+class focal_feature_frame(object):
+    def __init__(self, controller, max_per_col=10):
+        '''
+        opens frame to select a feature for detecting focal clusters with
+
+        Parameters
+        ----------
+        controller : controller object
+            controller object to save information and navigate between GUI and morphious back-end.
+
+        Returns
+        -------
+        None.
+
+        '''
+        self.window = Toplevel()
+        self.window.lift()
+        self.window.title('Select A Focal Feature')
+        self.window.protocol('WM_DELETE_WINDOW', lambda : self.on_tl_close(controller))
+        
+        self.feats_frame = LabelFrame(self.window, text='Select Features For Identifying Focal Clusters')
+        self.feats_frame.grid(row=0, column=0)
+        
+        self.features = controller.train_df.columns.values
+        self.selected_feat_var = self.set_initial_feature(controller)
+        self.radiobuttons = self.generate_radio_buttons(self.feats_frame, max_per_col=max_per_col)
+        self.load_button = Button(self.window, text="Load Feature", command=lambda: self.select_focal_feature(controller))
+        
+        r = int(math.ceil(len(self.features)/max_per_col))
+        self.load_button.grid(row=r, column=0, columnspan=max_per_col)
+    
+    def set_initial_feature(self, controller):
+
+        init_feat = controller.focal_feature
+        init_idx = np.where(self.features==init_feat)[0]
+        feat = IntVar(value = int(init_idx[0]))
+        return feat
+    
+    def generate_radio_buttons(self, frame, max_per_col=10):
+        radiobuttons = [Radiobutton(frame, text=f, variable=self.selected_feat_var, value=i) 
+                        for i,f in enumerate(self.features)]
+               
+        row=-1 #set to -1 because first % will increase to 0
+        for i, r in enumerate(radiobuttons):
+            if (i % max_per_col) == 0:
+                row+=1 
+            r.grid(row=row, column=i - (10*row))
+        return radiobuttons
+    
+        
+    def select_focal_feature(self, controller):
+        '''
+        saves selected features and PCA transformation settings to the controller
+
+        Parameters
+        ----------
+         controller : controller object
+            controller object to save information and navigate between GUI and morphious back-end.
+
+        Returns
+        -------
+        None.
+
+        '''
+        selected_feature_idx = self.selected_feat_var.get()
+        controller.focal_feature = self.features[selected_feature_idx]
+        print(controller.focal_feature)
+        self.on_tl_close(controller)
+            
+    
+    def on_tl_close(self, controller):
+        '''
+        closes frame
+
+        Parameters
+        ----------
+        controller : controller object
+            controller object to save information and navigate between GUI and morphious back-end.
+
+        Returns
+        -------
+        None.
+
+        '''
+        self.window.destroy()
+        controller.focal_feature_frame = None
         
 class save_cluster_frame(object):
     def __init__(self, controller):
@@ -952,7 +1119,6 @@ class save_cluster_frame(object):
         controller.save_frame = None
         
 class grid_search_frame(object):
-        
     def __init__(self, controller):
         '''
         generates the grid search frame which allows for running a grid search to identify optimal MORPHIOUS parameters
@@ -1258,3 +1424,309 @@ class grid_search_frame(object):
         '''
         self.window.destroy()
         controller.grid_search_frame = None
+
+class analysis_selector_frame(object):
+    def __init__(self, controller):
+        '''
+        opens the post-cluster analysis pane
+
+        Parameters
+        ----------
+        controller : controller object
+            controller object to save information and navigate between GUI and morphious back-end.
+        Returns
+        -------
+        None.
+        '''
+        self.window = Toplevel()
+        self.window.lift()
+        self.window.title('Post MORPHIOUS analysis')
+        self.window.protocol('WM_DELETE_WINDOW', lambda : self.on_tl_close(controller))
+        
+        self.frame = LabelFrame(self.window, text='Select an analysis protocol')
+        self.frame.grid(row=0, column=0)
+        self.b1 = Button(self.frame, text="IF & cluster analysis", command=lambda : controller.open_subanalysis_frame('IF')).grid(row=1, column=0)
+        self.b2 = Button(self.frame, text="skeleton & cell analysis", command=lambda : controller.open_subanalysis_frame('Skeleton', title='Skeleton & Cell Analysis', cell_data=True)).grid(row=2, column=0)
+        #self.b3 = Button(self.frame, text="cluster analysis", command=lambda : controller.open_subanalysis_frame('cluster')).grid(row=3, column=0)
+
+    def on_tl_close(self, controller):
+        '''
+        closes the frame
+
+        Parameters
+        ----------
+        controller : controller object
+            controller object to save information and navigate between GUI and morphious back-end.
+
+        Returns
+        -------
+        None.
+
+        '''
+        self.window.destroy()
+        controller.analysis_selector_frame = None
+
+class subanalysis_frame(object):
+    def __init__(self, controller, protocol, title='Immunofluorescence analysis', cell_data=False, max_group_rows=12):
+        '''
+        opens a post-cluster sub analysis pane -- inherited by specific analysis protocols
+
+        Parameters
+        ----------
+        controller : controller object
+            controller object to save information and navigate between GUI and morphious back-end.
+        Returns
+        -------
+        None.
+        '''
+        self.window = Toplevel()
+        self.window.lift()
+        self.window.title(title)
+        self.window.protocol('WM_DELETE_WINDOW', lambda : self.on_tl_close(controller))
+        self.protocol = protocol
+        self.include_cell_data = cell_data
+        self.max_group_rows = 12
+
+        self.anal_frame = LabelFrame(self.window, text=f'load {self.protocol} files for analysis')
+        self.anal_frame.grid(row=0, column=0)
+        
+        self.select_dir_button = Button(self.anal_frame, text=f'Select Path', command = lambda : self.select_subanalysis_path(controller, self.protocol, row=1, column=1))
+        self.selected_dir_label = Label(self.anal_frame, text="", relief=RIDGE, width=30)
+        self.select_dir_button.grid(row=1, column=0)
+        self.selected_dir_label.grid(row=1, column=1)
+
+        #optional cell data loaders
+        if self.include_cell_data:
+            self.cell_anal_frame = LabelFrame(self.window, text=f'Load cell files for analysis')
+            self.cell_anal_frame.grid(row=0, column=2)
+            self.select_cell_dir_button = Button(self.cell_anal_frame, text='Select Path', command = lambda : self.select_subanalysis_path(controller, 'Cell', row=1, column=3))
+            self.selected_cell_dir_label = Label(self.cell_anal_frame, text="", relief=RIDGE, width=30)
+            self.select_cell_dir_button.grid(row=1, column=2)
+            self.selected_cell_dir_label.grid(row=1, column=3)
+
+        self.load_data_button = Button(self.window, text=f'Load Data', command = lambda : self.load_data(controller))
+        self.load_data_button.grid(row=2, column=0, columnspan=2 + (2*int(self.include_cell_data))) #2 or 4 if cell data included
+
+        self.regroup_frame = LabelFrame(self.window, text=f'Enter labels to group files of the same sample (e.g., mouse)')
+        self.regroup_labels = None
+        self.regroup_entries = None
+        
+        #added via grid_output_buttons function
+        self.save_output_frame = LabelFrame(self.window, text=f'Save Analysis File')
+        self.select_output_dir_button = None
+        self.selected_output_dir_label = None
+        self.run_button = None
+
+    def select_subanalysis_path(self, controller, protocol, row=2, column=1):
+        '''
+        opens a post-cluster sub analysis pane -- inherited by specific analysis protocols
+
+        Parameters
+        ----------
+        controller : controller object
+            controller object to save information and navigate between GUI and morphious back-end.
+        Returns
+        -------
+        None.
+        '''
+        if protocol == "IF":
+            controller.IF_anal_path = filedialog.askdirectory(initialdir="")
+            self.set_path_label(controller, controller.IF_anal_path, row=row, column=column)
+        if protocol == "output":
+            controller.output_anal_path = filedialog.askdirectory(initialdir="")
+            self.set_path_label(controller, controller.output_anal_path, path_type="output", row=row, column=column)
+        if protocol == "Skeleton":
+            controller.skel_anal_path = filedialog.askdirectory(initialdir="")
+            self.set_path_label(controller, controller.skel_anal_path, path_type="feature", row=row, column=column)
+        if protocol == "Cell":
+            controller.cell_anal_path = filedialog.askdirectory(initialdir="")
+            self.set_path_label(controller, controller.cell_anal_path, path_type="cell", row=row, column=column)
+    
+            
+    def set_path_label(self, controller, path, path_type='feature', row=2, column=1):
+        """GUI function, sets the path label to what what set by the user
+
+        Args:
+            controller (object): controller, contains helper functions
+            path (str): saved path
+            path_type (str, optional): sets the frame for the path label, feature == skeleton and IF frames, Cell == cell frame, output == output. Defaults to 'feature'.
+            row (int, optional): row grid location of label. Defaults to 2.
+            column (int, optional): column grid location of label. Defaults to 1.
+        """
+
+        if path_type == 'cell':
+            self.selected_cell_dir_label.grid_remove()
+            self.selected_cell_dir_label = Label(self.cell_anal_frame, text=controller.truncate_label_string(path), relief=RIDGE, width=30)
+            self.selected_cell_dir_label.grid(row=row, column=column)
+            
+        elif path_type == 'feature':
+            self.selected_dir_label.grid_remove()
+            self.selected_dir_label = Label(self.anal_frame, text=controller.truncate_label_string(path), relief=RIDGE, width=30)
+            self.selected_dir_label.grid(row=row, column=column)
+
+        elif path_type == 'output':
+            if self.selected_output_dir_label.grid_info():
+                self.selected_output_dir_label.grid_remove()
+            self.selected_output_dir_label = Label(self.save_output_frame, text=controller.truncate_label_string(path), relief=RIDGE, width=30)
+            self.selected_output_dir_label.grid(row=row, column=column)
+
+    def load_data(self, controller):
+        """loads data from the selected path. self.protocol determines whether IF or Skel. & cell analysis dfs are used
+        grids the loaded files for subsequent grouping
+
+        Args:
+            controller (object): contains the saved paths
+        """
+        files = controller.load_anal_data(self.protocol) #if protcol is Skeleton, the cell path is checked internally by the controller
+        if files is not None:
+            self.set_regroup_options(controller, files, max_rows=self.max_group_rows)
+            self.grid_output_buttons(controller, start_row=self.max_group_rows+3)
+        else:
+            warning_box(title="Warning!", message="No files found, did you choose the correct directory?")
+
+    def create_label_input_pairs(self, controller, frame, file, row, col, defaultgroup):
+        """creates a label for each file, and an entry box for users to regroup the files
+
+        Args:
+            controller (object): contains helper functions
+            frame (tkinter.labelframe): frame to grid the label/entry pairs on
+            file (str): name of file, used as label
+            row (int): grid row
+            col (int): grid column
+            defaultgroup (int/str): initial group value for each file
+
+        Returns:
+            tuple: label and entry objects
+        """
+
+        lab = Label(frame, text=controller.truncate_label_string(file, max_length=50), relief=RIDGE, width=50)
+        lab.grid(row=row, column=col)
+        entr = Entry(frame, width=10)
+        entr.insert(END, defaultgroup)
+        entr.grid(row=row, column=col+1)
+        return (lab, entr)
+
+    def set_regroup_options(self, controller, files, max_rows=15, row_start=3):
+        """creates the file regrouping grame - a grid of label/entry pairs for each loaded file
+        Args:
+            controller (object): contains file information and helper functions
+            files (_type_): files to be used as labels
+            max_rows (int, optional): max number of rows per column. Defaults to 15.
+            row_start (int, optional): row buffer to ensure rows are grided in correct location. Defaults to 3.
+        """
+        labels = []
+        entries = []
+        self.regroup_frame.grid(row=row_start, column=0)
+        for i, f in enumerate(files): #create a label/entry pair for each file loaded
+            row = i % max_rows
+            col = int(i/max_rows)
+            l,e = self.create_label_input_pairs(controller, self.regroup_frame, f, row+row_start, col+(2*col), i) #iter cols by 2
+            labels.append(l)
+            entries.append(e)
+
+        #store labels/entries
+        self.regroup_labels = labels
+        self.regroup_entries = entries
+
+    def grid_output_buttons(self, controller, start_row=19):
+        """creates the save analysis and run frame
+
+        Args:
+            controller (object): contains data and helper functions
+            start_row (int, optional): buffer to ensure start row is grided in correct location. Defaults to 19.
+        """
+        #grid save and run output buttons/labels
+        self.save_output_frame.grid(row=start_row, column=0)
+        self.select_output_dir_button = Button(self.save_output_frame, text=f'Select Path', command = lambda : self.select_subanalysis_path(controller, "output", row=start_row+1, column=1))
+        self.selected_output_dir_label = Label(self.save_output_frame, text=controller.truncate_label_string(controller.output_anal_path), relief=RIDGE, width=30)
+        self.run_button = Button(self.save_output_frame, text=f'Run!', command = lambda : self.run_analysis(controller))
+
+        self.select_output_dir_button.grid(row = start_row+1, column=0)
+        self.selected_output_dir_label.grid(row = start_row+1, column=1)
+        self.run_button.grid(row=start_row+2, column=0, columnspan=2)
+    
+    def run_analysis(self, controller):
+        """performs the analysis based on value in self.protocol (IF & cluster or skeleton & cell)
+
+        Args:
+            controller (object): contains data and helper functions
+        """
+        groups = self.generate_group_dict()
+        if self.protocol == "IF":
+            controller.perform_IF_analysis(groups)
+        if self.protocol == "Skeleton":
+            controller.perform_skel_and_cell_analysis(groups)
+
+    def generate_group_dict(self):
+        """reads the entry/label pairs to map files to each analytical group
+
+        Returns:
+            dictionary: maps the filename to a group
+        """
+        groups = {}
+        for lab,ent in zip(*[self.regroup_labels, self.regroup_entries]):
+            file = lab["text"]
+            group = ent.get()
+            groups[file] = group
+        return groups
+
+    def on_tl_close(self, controller):
+        '''
+        closes the frame
+
+        Parameters
+        ----------
+        controller : controller object
+            controller object to save information and navigate between GUI and morphious back-end.
+
+        Returns
+        -------
+        None.
+        '''
+        self.window.destroy()
+        if self.protocol == "IF":
+            controller.IF_analysis_frame = None
+            controller.IF_anal_path = None
+            controller.IF_anal_df = None
+        
+        if self.protocol == "Skeleton":
+            controller.skel_analysis_frame= None
+            controller.skel_anal_path = None
+            controller.cell_anal_path = None
+            controller.skel_anal_df = None
+            controller.cell_anal_df = None
+
+        controller.output_anal_path = None
+
+def close_analysis_frame_warning():
+    """ warning for opening multiple analysis frames simultaneously
+    """
+    warning_box(title='WARNING!', message="please close the open analysis frame before opening a new type of analysis")
+
+def error_box(title=None, message=None):
+    """error messaage
+
+    Args:
+        title (str, optional): title of error message box. Defaults to None.
+        message (str, optional): description of error. Defaults to None.
+    """
+    messagebox.showerror(title=title, message=message)
+
+def warning_box(title=None, message=None):
+    """warning message
+
+    Args:
+        title (str, optional): title of warning message box. Defaults to None.
+        message (str, optional): description of warning. Defaults to None.
+    """
+    messagebox.showwarning(title=title, message=message)
+
+def complete_box(title=None, message=None):
+    """complete message
+
+    Args:
+        title (str, optional): title of complere message box. Defaults to None.
+        message (str, optional): description. Defaults to None.
+    """
+    messagebox.showinfo(title=title, message=message)
+
