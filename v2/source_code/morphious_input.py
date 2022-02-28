@@ -500,7 +500,7 @@ def read_skel_file(path, f, sep="\t"):
         pandas dataframe: dataframe of data
     """
     df = pd.read_csv(os.path.join(path, f), sep=sep)
-    fname = f.split("_")[0]
+    fname = '_'.join(f.split("_")[:-1])
     df.loc[:, 'TotalBranchLength'] = df['# Branches'].values * df['Average Branch Length']
     df = df.sum(axis=0)
     df = df.to_frame().T
