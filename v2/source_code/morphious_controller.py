@@ -526,6 +526,7 @@ class Controller(object):
             
             
         morphious_gridsearch.save_grids(grid, self.gridsearch_output_path, cv=cv, nCVs=self.cvs)
+        morphious_gui.complete_box(title="Complete!", message="Grid Search Complete!")
         
     def find_optimal_params(self):
         '''
