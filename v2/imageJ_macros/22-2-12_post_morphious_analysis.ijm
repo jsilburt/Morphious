@@ -12,7 +12,7 @@ process_skeleton=true;
 skeleton_dir = "/PATH TO SKELETONIZED IMAGES/";
 
 process_cell=true;
-//cell_dir = "/PATH TO BINARY CELL IMAGES/";
+cell_dir = "/PATH TO BINARY CELL IMAGES/";
 cell_size_thresh=30; //keep the same as the size parameter in the count_microglia or count_astrocyte macros
 
 //name the directory within "output_dir" to save the analysis. If left empty, default output directory names are chosen
@@ -58,7 +58,7 @@ function main(batchmode, input_dir, output_dir, skel_dir, roi_path, cell_dir, ce
 
 	default_area_threshold=100;
 
-	if (parseInt(override_save_dir_name.length()) > 0){
+	if (parseInt(lengthOf(override_save_dir_name)) > 0){
 		cluster = override_save_dir_name;
 	} else if (perform_cluster_analysis == false){
 		cluster="whole_image";
@@ -121,7 +121,7 @@ function main(batchmode, input_dir, output_dir, skel_dir, roi_path, cell_dir, ce
 	for(i=0; i<imgs.length; i++){
 		f = imgs[i];
 		print(f);
-		fn_len = parseInt(f.length());
+		fn_len = parseInt(lengthOf(f));
 		fn = substring(f, 0, (fn_len - 4)); //remove .tif for example
 		roi = fn + ".roi";
 		txt_file = fn + ".txt";

@@ -22,7 +22,7 @@ direct_filter = 6;
 morpho_open2 = 2;
 top = 150;
 
-size = 40;
+size = 30;
 int_thresh="IJ_IsoData";
 
 //correct image -- best not to modify
