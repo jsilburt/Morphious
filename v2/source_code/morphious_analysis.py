@@ -121,7 +121,6 @@ def skeleton_analysis(df, cell_df=None, skel_features=['# Branches', '# Junction
     df = pd.merge(df, grp_str, on='analysis_group', how='left')
     for f in skel_features:
         df.loc[:, f"{f}_per_100um2"] = (df[f] / df[bg_area]) * 100**2
-    df.loc[:, ' ']
     if cell_df is not None:
         cell_cols = np.setdiff1d(cell_df.columns.values, df.columns.values).tolist() + ['analysis_group']
         df = pd.merge(df, cell_df[cell_cols], on='analysis_group', how='inner')
