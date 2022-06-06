@@ -1,3 +1,5 @@
+//v 2021-1-4
+
 input = "C:/Users/joey_/__spyder_projects/MORPHIOUS_GUI/microglia_sample_data/images/treatment/";
 output = "C:/Users/joey_/__spyder_projects/MORPHIOUS_GUI/microglia_sample_data/images/image_scales/";
 

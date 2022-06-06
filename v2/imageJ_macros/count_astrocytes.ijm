@@ -3,6 +3,8 @@
  * InputDir should point to the directory with the s100b image files
  */
 
+//v 2021-1-4
+
 inputDir =  "your_path_here/microglia_sample_data/images/treatment/";
 outputDir = "your_path_here/microglia_sample_data/features/treatment/cells/";
 output_image_dir = "your_path_here/microglia_sample_data/features/treatment/cell_images/";

@@ -1,5 +1,7 @@
 //Extract branch features
 
+//v 2021-1-4
+
 inputdir = "your_path_here/microglia_sample_data/images/treatment/";
 outputdir = "your_path_here/microglia_sample_data/features/treatment/skeleton/";
 skeleton_image_dir = "your_path_here/microglia_sample_data/features/treatment/skeletonized_images/";

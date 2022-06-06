@@ -1,6 +1,8 @@
 
 //extract fractal dimension features
 
+//v 2021-1-4
+
 input = "your_path_here/microglia_sample_data/images/treatment/";
 output = "your_path_here/microglia_sample_data/features/treatment/fractal/";
 binary_dir = "your_path_here/microglia_sample_data/features/treatment/binarized_images/";

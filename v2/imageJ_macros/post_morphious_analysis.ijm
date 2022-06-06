@@ -4,6 +4,8 @@
  *  
  */
 
+//v 2022-2-12
+
 input_dir = "/PATH TO INPUT FILES/";
 output_dir = "/PATH TO AN OUTPUT DIRECTORY/";
 
