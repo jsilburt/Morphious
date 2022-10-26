@@ -19,6 +19,7 @@ import morphious_analysis
 
 import pandas as pd
 import numpy as np
+import os
 
 class Controller(object):
     
@@ -52,6 +53,7 @@ class Controller(object):
         self.console_frame = None
         self.grid_search_frame = None
         self.save_frame = None
+        self.save_df_frame = None
         self.analysis_selector_frame = None
         self.IF_analysis_frame = None
         self.skel_analysis_frame = None
@@ -97,6 +99,7 @@ class Controller(object):
         
         #path for output cluster files
         self.output_cluster_path = None
+        self.output_df_path = None
         
         #grid search parameters
         self.nu_start = 0.1
@@ -214,6 +217,12 @@ class Controller(object):
         '''
         if self.save_frame == None:
             self.save_frame = morphious_gui.save_cluster_frame(self)
+    def open_save_df_frame(self):
+        '''
+
+        '''
+        if self.save_df_frame == None:
+            self.save_df_frame = morphious_gui.save_df_frame(self)
             
     def open_grid_search_frame(self):
         '''
@@ -617,6 +626,34 @@ class Controller(object):
         morphious_write_clusters.write_all_cluster_files(df, clusters=clusters,path=self.output_cluster_path,
                            write_unclustered=True, unclustered_reference = unclustered_reference, unclustered_output="unclustered",
                            groupby = ["file"])
+
+    def save_df(self, selection):
+        '''
+        writes train or test df to file
+
+        Parameters
+        ----------
+        selection : int
+            selects the dataframe to save.
+
+        Returns
+        -------
+        None.
+
+        '''
+        if selection == 1:
+            df = self.cv_clusters
+            f = "processed_train_df.csv"
+        elif selection == 2:
+            df = self.test_clusters
+            f = "processed_test_df.csv"
+        else:
+            morphious_gui.warning_box(title="Warning!", message="Please select a dataset")
+            return None
+        
+        df.to_csv(os.path.join(self.output_df_path, f))
+
+
     
         #controller functions
     def truncate_label_string(self, labelstr, max_length=25):

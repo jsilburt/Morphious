@@ -90,13 +90,14 @@ class MORPHIOUS_frame(object):
         self.cluster_frame.grid(row=3, column=0, padx=10, pady=10)
         self.b3 = Button(self.cluster_frame, text="Find Clusters", command=lambda : controller.open_cluster_frame()).grid(row=4,column=0)
         self.b4 = Button(self.cluster_frame, text="Save Clusters", command=lambda : controller.open_save_frame()).grid(row=5,column=0)
-        self.b5 = Button(self.cluster_frame, text="Grid Search Parameters", command=lambda : controller.open_grid_search_frame()).grid(row=6,column=0)
+        self.save_df_button = Button(self.cluster_frame, text="Save Processed Data", command=lambda : controller.open_save_df_frame()).grid(row=6,column=0) #command=lambda : controller.open_save_df_frame()
+        self.b5 = Button(self.cluster_frame, text="Grid Search Parameters",command=lambda : controller.open_grid_search_frame()).grid(row=7,column=0)
         
         #post cluster analysis
         self.analysis_frame = LabelFrame(self.window, text="Post Cluster Analysis", padx=2, pady=2)
-        self.analysis_frame.grid(row=7, column=0)
+        self.analysis_frame.grid(row=8, column=0)
         self.b6 = Button(self.analysis_frame, text="Post-Cluster Analysis", command=lambda : controller.open_analysis_frame())
-        self.b6.grid(row=8, column=0)
+        self.b6.grid(row=9, column=0)
     
     def on_tl_close(self, controller):
         '''
@@ -874,7 +875,8 @@ class features_frame(object):
             self.pca_variance_label.grid_remove()
             self.pca_variance_label = Label(self.pca_frame,text="{:0.5f}".format(variance))
             self.pca_variance_label.grid(row=row, column=1)
-        except:
+        except Exception as e:
+            print(f'=== error === \n{e}')
             error_box(title='Error!', message='Cannot check PCA variance, did you enter a number of priniciple components?')
 
     def on_tl_close(self, controller):
@@ -981,7 +983,140 @@ class focal_feature_frame(object):
         '''
         self.window.destroy()
         controller.focal_feature_frame = None
-        
+ 
+class save_df_frame(object):
+    def __init__(self, controller):
+        '''
+        opens frame to define where cluster files should be save
+
+        Parameters
+        ----------
+        controller : controller object
+            controller object to save information and navigate between GUI and morphious back-end.
+
+        Returns
+        -------
+        None.
+
+        '''
+        self.window = Toplevel()
+        self.window.lift()
+
+        self.window.title('save processed data')
+        self.window.protocol('WM_DELETE_WINDOW', lambda : self.on_tl_close(controller))
+
+        self.radio_select = IntVar()
+        self.cv_radio, self.test_radio = self.generate_radio_buttons(controller, self.radio_select)
+
+        self.save_data_button = Button(self.window, text='Save Data', command = lambda : self.write_df(controller))
+        self.select_dir_button = Button(self.window, text='Select Path', command = lambda : self.select_path(controller))
+        self.select_dir_button.grid(row=1, column=0)
+        self.selected_dir_label = Label(self.window, text=controller.output_cluster_path, relief=RIDGE, width=30)
+        self.selected_dir_label.grid(row=1, column=1, columnspan=2)
+
+        self.save_data_button.grid(row=2, column=0, columnspan=3)
+    
+    def select_path(self, controller):
+        '''
+        select a path to save the clusters to
+
+        Parameters
+        ----------
+        controller : controller object
+            controller object to save information and navigate between GUI and morphious back-end.
+
+        Returns
+        -------
+        None.
+
+        '''
+        controller.output_df_path = filedialog.askdirectory(initialdir="")
+        self.set_dir_label(controller)
+        self.window.lift()
+
+    def set_dir_label(self, controller):
+        '''
+        sets the selected path as a label
+
+        Parameters
+        ----------
+        controller : controller object
+            controller object to save information and navigate between GUI and morphious back-end.
+
+        Returns
+        -------
+        None.
+
+        '''
+        self.selected_dir_label.grid_remove()
+        self.selected_dir_label = Label(self.window, text=controller.truncate_label_string(controller.output_df_path, max_length=3), relief=RIDGE, width=30)
+        self.selected_dir_label.grid(row=1, column=1, columnspan=2)
+    
+    def generate_radio_buttons(self, controller, var):
+        '''
+        generates radio buttons to choose which dataframe to write
+
+        Parameters
+        ----------
+        controller : controller object
+            controller object to save information and navigate between GUI and morphious back-end.
+        var : Tkinter variable object
+            listener to store the state of the radiobutton in.
+
+        Returns
+        -------
+        radio_buttons : TYPE
+            DESCRIPTION.
+
+        '''
+        radio_buttons = []
+        for df, txt, val in zip([controller.train_df, controller.test_df],
+                      ["training data",  "test data"],
+                      [1,2]):
+
+            if df is not None:
+                state = NORMAL
+            else:
+                state = DISABLED
+            r = Radiobutton(self.window, text=txt, variable=var, value=val, state=state)
+            r.grid(row=0, column=val-1)
+            radio_buttons.append(r)
+        return radio_buttons
+
+    def write_df(self, controller):
+        '''
+        writes the train or test df based on the saved path and dataset selection information
+
+        Parameters
+        ----------
+        controller : controller object
+            controller object to save information and navigate between GUI and morphious back-end.
+
+        Returns
+        -------
+        None.
+
+        '''
+        controller.save_df(self.radio_select.get())
+        self.on_tl_close(controller)
+    
+    def on_tl_close(self, controller):
+        '''
+        closes the frame
+
+        Parameters
+        ----------
+        controller : controller object
+            controller object to save information and navigate between GUI and morphious back-end.
+
+        Returns
+        -------
+        None.
+
+        '''
+        self.window.destroy()
+        controller.save_df_frame = None
+
 class save_cluster_frame(object):
     def __init__(self, controller):
         '''
