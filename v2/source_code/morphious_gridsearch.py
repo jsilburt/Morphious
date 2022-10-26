@@ -49,7 +49,7 @@ def setup_grid_ranges(gamma_range=[0.05,0.15,3],nu_range=[0.08,0.2,6],minN_range
 
 def grid_search_one_model(train, test, features=[],
                           kernel='rbf', gamma_range=[0.05,0.15,3],nu_range=[0.08,0.2,6], minN_range=[10,26,7],
-                          eps = 128, pca=False, nPCs = 3, scale='standard',
+                          eps = 128, pca=False, nPCs = 3, scaler='standard',
                           cross_validate_one_group=False, CVs=5,
                           focal_cluster=False,focal_minN=5,focal_feature="IntDen",
                           summarize_clusters=True, groupby = ['file'], summary_keys=['gamma','nu','minN'], 
@@ -139,7 +139,7 @@ def grid_search_one_model(train, test, features=[],
          
         if cross_validate_one_group:
             clust = morphious_cluster.iter_all_one_model(train, test, features=features,extra_scalers=[],
-                               cross_validate_one_group=cross_validate_one_group, CVs = CVs,scale=scale,
+                               cross_validate_one_group=cross_validate_one_group, CVs = CVs, scaler=scaler,
                                gamma=g, nu=n, kernel='rbf', minN=int(m), eps=eps,
                                focal_cluster=False,focal_minN=5,focal_feature="IntDen",
                                pca=pca,n_comps=nPCs,return_pca_model=False,
@@ -148,7 +148,7 @@ def grid_search_one_model(train, test, features=[],
             
         else:
             x, clust = morphious_cluster.iter_all_one_model(train, test, features=features,extra_scalers=[],
-                               cross_validate_one_group=cross_validate_one_group, CVs = CVs,scale=scale,
+                               cross_validate_one_group=cross_validate_one_group, CVs = CVs, scaler=scaler,
                                gamma=g, nu=n, kernel='rbf', minN=int(m), eps=eps,
                                focal_cluster=False,focal_minN=5,focal_feature="IntDen",
                                pca=pca,n_comps=nPCs,return_pca_model=False,

@@ -141,7 +141,7 @@ def dbscan_cluster(data,features=["BX","BY"], minN=20, eps=None, label="proximal
     return result
 
 def process_focal_cluster(df,focal_minN=5,focal_feature="IntDen",focal_thresh=None,return_thresh=False, 
-                          subsetby="proximal_clusters", eps=None):
+                          subsetby="proximal_clusters", eps=None, boxsize=150, scale=1.5):
     '''
     function to identify focal clusters by applying DBSCAN to proximal clusters / outliers which are first thresholded by a cutoff value.
     This cutoff value can be automatically determined by setting focal_thresh to None
@@ -172,7 +172,7 @@ def process_focal_cluster(df,focal_minN=5,focal_feature="IntDen",focal_thresh=No
     print("focal threshold: ", focal_thresh)
     trt_f = trim(df,feature=focal_feature,gt=True,threshold=focal_thresh)
     if len(trt_f) > 0:
-        df.loc[trt_f.index, "focal_clusters"] = dbscan_cluster(trt_f,minN=focal_minN,return_labels=True, eps=eps)
+        df.loc[trt_f.index, "focal_clusters"] = dbscan_cluster(trt_f,minN=focal_minN,return_labels=True, eps=eps, boxsize=boxsize, scale=scale)
         df.loc[:,"focal_clusters"] = df["focal_clusters"].fillna(-1)
     else:
         df.loc[:,"focal_clusters"] = -1
@@ -405,13 +405,14 @@ def iter_clustering_one_model(train, test_series, features = ['IntDen','Mean','D
     
 def iter_all_one_model(train, test, features=["Mean","IntDen","D"],extra_scalers=["IntDen"],
                            cross_validate_one_group=False, CVs = 5,
-                       scale='standard',
+                       scaler='standard',
                            gamma=0.1, nu=0.1, kernel='rbf', minN=20, eps=None,
                            focal_cluster=False,focal_minN=5,focal_feature="IntDen",
                            pca=False,n_comps=3,return_pca_model=False,
                           relabel_clusters=True, combine=False, label_unclustered=True, unclustered_reference='proximal_clusters',
                           groupby=['file'],
                           coords = ['BX','BY'],
+                          boxsize=150, pixelscale=1.5
                           ):
     '''
     all in one convenience function to perform scaling, PCA transformation, and MORPHIOUS clustering. 
@@ -431,7 +432,7 @@ def iter_all_one_model(train, test, features=["Mean","IntDen","D"],extra_scalers
         if true, performs cross-validation on the train dataset, the test dataset is ignored. The default is False.
     CVs : int, optional
         the number of cross-validations to be performed. The default is 5.
-    scale : String, optional
+    scaler : String, optional
         method for scaling the data, choices are 'standard' or 'minmax'; scaling is based on the training set and applied to the test set. The default is 'standard'.
     gamma : float, optional
         gamma hyper-parameter for the ocSVM; 
@@ -487,7 +488,7 @@ def iter_all_one_model(train, test, features=["Mean","IntDen","D"],extra_scalers
         to_scale_feats = to_scale_feats + [focal_feature]
         
     to_scale_feats = np.unique(np.array(to_scale_feats))
-    train, test = standard_scale(train,test,features=to_scale_feats,dropna=True,newcols=True, scale=scale)
+    train, test = standard_scale(train,test,features=to_scale_feats,dropna=True,newcols=True, scale=scaler)
         
     if pca:
         if test is not None:
@@ -510,7 +511,8 @@ def iter_all_one_model(train, test, features=["Mean","IntDen","D"],extra_scalers
             test_sections = iter_clustering_one_model(X_train.reset_index(), X_test.reset_index(), coords=coords,
                                                       features=input_features, gamma=gamma, nu=nu, kernel=kernel, 
                                                       minN=minN,eps=eps,groupby=groupby,
-                                                     focal_cluster=focal_cluster, focal_feature=focal_feature, focal_minN=focal_minN
+                                                     focal_cluster=focal_cluster, focal_feature=focal_feature, focal_minN=focal_minN,
+                                                     boxsize=boxsize, scale=pixelscale
                                                     )
             all_series.append(test_sections)
         train = pd.concat(all_series, sort=True)
@@ -520,7 +522,8 @@ def iter_all_one_model(train, test, features=["Mean","IntDen","D"],extra_scalers
     else:
         test = iter_clustering_one_model(train, test, features=input_features, coords=coords,
                                                 gamma=gamma, nu=nu, kernel=kernel,minN=minN,eps=eps,groupby=groupby,
-                                               focal_cluster=focal_cluster, focal_feature=focal_feature, focal_minN=focal_minN)
+                                               focal_cluster=focal_cluster, focal_feature=focal_feature, focal_minN=focal_minN,
+                                               boxsize=boxsize, scale=pixelscale)
         #'''
         train.loc[:, 'proximal_clusters'] = np.nan
         if focal_cluster:

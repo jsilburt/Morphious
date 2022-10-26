@@ -457,7 +457,7 @@ class Controller(object):
             #find clusters in the train set via cross validation
             train = morphious_cluster.iter_all_one_model(self.train_df, None, features=self.selected_features,extra_scalers=["IntDen"],
                            cross_validate_one_group=True, CVs = self.cvs,
-                       scale='standard',
+                       scaler='standard', pixelscale=self.scale, boxsize=self.boxsize,
                            gamma=self.gamma, nu=self.nu, kernel='rbf', minN=self.minN, eps=self.min_dist,
                            focal_cluster=False,focal_minN=5,focal_feature="IntDen",
                            pca=self.use_pca,n_comps=self.nPCs,return_pca_model=False,
@@ -479,7 +479,7 @@ class Controller(object):
             # note, clusters are not searched for in the train set, it is only used for training purposes
             train, test = morphious_cluster.iter_all_one_model(self.train_df, self.test_df, features=self.selected_features,extra_scalers=["IntDen"],
                            cross_validate_one_group=False, CVs = self.cvs,
-                       scale='standard',
+                       scaler='standard', pixelscale=self.scale, boxsize=self.boxsize,
                            gamma=self.gamma, nu=self.nu, kernel='rbf', minN=self.minN, eps=self.min_dist,
                            focal_cluster=self.find_focal_clusters,focal_minN=self.focal_minN,focal_feature="IntDen",
                            pca=self.use_pca,n_comps=self.nPCs,return_pca_model=False,
@@ -511,12 +511,13 @@ class Controller(object):
         
         #run grid search on the traing set via cross validation
         if cv:
+            print("=== CV gridsearch ===")
             test = None #test input is ignored
             train = self.train_df
             
             grid = morphious_gridsearch.grid_search_one_model(train, test, features=self.selected_features,
                           kernel='rbf', gamma_range=gamma_range,nu_range=nu_range, minN_range=minN_range,
-                          eps = self.min_dist, pca=self.use_pca, nPCs = self.nPCs, scale='standard',
+                          eps = self.min_dist, pca=self.use_pca, nPCs = self.nPCs, scaler='standard',
                           cross_validate_one_group=True, CVs=self.cvs,
                           focal_cluster=False,focal_minN=5,focal_feature="IntDen",
                           summarize_clusters=True, groupby = ['file'], summary_keys=['gamma','nu','minN'], 
@@ -531,7 +532,7 @@ class Controller(object):
             #run a grid search training on the train data and testing on the test data
             grid = morphious_gridsearch.grid_search_one_model(train, test, features=self.selected_features,
                           kernel='rbf', gamma_range=gamma_range,nu_range=nu_range, minN_range=minN_range,
-                          eps = self.min_dist, pca=self.use_pca, nPCs = self.nPCs, scale='standard',
+                          eps = self.min_dist, pca=self.use_pca, nPCs = self.nPCs, scaler='standard',
                           cross_validate_one_group=False, CVs=self.cvs,
                           focal_cluster=False,focal_minN=5,focal_feature="IntDen",
                           summarize_clusters=True, groupby = ['file'], summary_keys=['gamma','nu','minN'], 
