@@ -629,7 +629,7 @@ class Controller(object):
         
         morphious_write_clusters.write_all_cluster_files(df, clusters=clusters,path=self.output_cluster_path,
                            write_unclustered=True, unclustered_reference = unclustered_reference, unclustered_output="unclustered",
-                           groupby = ["file"])
+                           groupby = ["file"], scale=self.scale)
 
     def save_df(self, selection):
         '''

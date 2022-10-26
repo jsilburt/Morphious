@@ -31,7 +31,6 @@ def write_cluster_file(df, file, path="", boxsize=150, scale=1.5):
     None.
 
     '''
-    scale = 1.5
     coords = df.loc[:, ['BX','BY']]
     if len(coords) > 0:
         coords.loc[:,'BX'] = coords.loc[:,'BX'] * scale
@@ -42,7 +41,7 @@ def write_cluster_file(df, file, path="", boxsize=150, scale=1.5):
     
 def write_all_cluster_files(df,clusters=["proximal_clusters","focal_clusters"],
                             path="",write_unclustered=True, unclustered_reference = 'combined_clusters', 
-                            unclustered_output="unclustered", groupby = ["file"]):
+                            unclustered_output="unclustered", groupby = ["file"], scale=1.5):
     '''
     writes the coordinates of all cluster types into files. Unclustered samples are written as an empty file.
 
@@ -95,7 +94,7 @@ def write_all_cluster_files(df,clusters=["proximal_clusters","focal_clusters"],
                 x = dat.xs(1, level=c,drop_level=False).copy() #remove settingwithcopy warning
                 dest_path = path+"/"+c.replace("_clusters","")
                 if check_subdir(dest_path):
-                    write_cluster_file(x,file,path=dest_path)
+                    write_cluster_file(x,file,path=dest_path, scale=scale)
                 else:
                     print("Error! path not found")
                     
