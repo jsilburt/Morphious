@@ -472,8 +472,10 @@ class load_data_frame(object):
         None.
 
         '''
-        controller.boxsize = float(self.boxsize_entry.get())
-        controller.scale = float(self.scale_entry.get())
+        boxsize, scale = float(self.boxsize_entry.get()), float(self.scale_entry.get())
+        controller.boxsize = boxsize
+        controller.scale = scale
+        controller.set_min_dist(boxsize, scale)
         loaded = controller.load_data(train_load)
         if loaded:
             self.on_tl_close(controller, train_load)

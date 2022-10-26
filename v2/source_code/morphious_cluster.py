@@ -98,7 +98,7 @@ def trim(X,feature="Mean",gt=True,threshold=-1):
         re = X.loc[X[feature] < threshold]
     return re
 
-def dbscan_cluster(data,features=["BX","BY"], minN=20, eps=None, label="proximal_clusters", return_labels=False,boxsize=150):
+def dbscan_cluster(data,features=["BX","BY"], minN=20, eps=None, label="proximal_clusters", return_labels=False, boxsize=150, scale=1.5):
     '''
     uses a DBSCAN classifier to identify density based clusters
 
@@ -118,6 +118,8 @@ def dbscan_cluster(data,features=["BX","BY"], minN=20, eps=None, label="proximal
         if true, returns just a list of clusters, instead of a dataframe. The default is False.
     boxsize : float, optional
         the grid size used for generating the feature map. The default is 150.
+    scale : float, optional
+        the scale of the image - corresponds to the scale during feature extraction and loading
 
     Returns
     -------
@@ -125,8 +127,8 @@ def dbscan_cluster(data,features=["BX","BY"], minN=20, eps=None, label="proximal
         either the dataframe with identified clusters embedded as a column, or the columns values, as returned as a numpy array.
 
     '''
-    if eps == None:
-        eps = math.sqrt((2.0*(boxsize/1.5)**2)) + 1
+    if eps is None:
+        eps = calculate_eps(boxsize, scale)
 
     print('minN: ',minN, 'epsilon: ',eps)
     clusterer=DBSCAN(min_samples=minN,eps=eps)
@@ -299,13 +301,15 @@ def scan_elbow(curve,penalty=0.05,min_curve_distance=0.5,default_threshold=99):
         thresh = default_threshold
     return thresh
 
-
+def calculate_eps(boxsize, scale):
+    return math.sqrt((2.0*(boxsize/scale)**2)) + 1
        
 def iter_clustering_one_model(train, test_series, features = ['IntDen','Mean','D'], 
                               groupby=['file'], coords=['BX','BY'],
-                    gamma=0.1, nu=0.1, kernel='rbf', minN=20,eps=None,
-                                  trim_feature='Mean', trim_threshold=-1,
-                                  focal_cluster=False, focal_feature='IntDen', focal_minN=5, boxsize=150
+                              gamma=0.1, nu=0.1, kernel='rbf', minN=20, eps=None,
+                              trim_feature='Mean', trim_threshold=-1,
+                              focal_cluster=False, focal_feature='IntDen', focal_minN=5, 
+                              boxsize=150, scale=1.5
                    ):
     '''
     Trains a one-class support vector machine (ocSVM) with training data, and subsequently tests in on test data.
@@ -354,6 +358,8 @@ def iter_clustering_one_model(train, test_series, features = ['IntDen','Mean','D
         corresponds to the minimum number of neighours within distance eps to identify focal clusters. The default is 5.
     boxsize : int, optional
         the selected grid size used when extracting features. The default is 150.
+    scale : int, optional
+        the scale of the images used for extracting features. The default is 1.5.
 
     Returns
     -------
@@ -368,6 +374,9 @@ def iter_clustering_one_model(train, test_series, features = ['IntDen','Mean','D
     grouping_keys = ['ID','Section']
     test_series = test_series.set_index(groupby+['boxID'])
     test_sections = []
+
+    if eps is None:
+        eps = calculate_eps(boxsize, scale)
     
     clusterer = DBSCAN(min_samples=minN,eps=eps)
     
@@ -387,7 +396,7 @@ def iter_clustering_one_model(train, test_series, features = ['IntDen','Mean','D
             clusters = clusterer.fit_predict(to_cluster[coords])
             section.loc[to_cluster.index, proximal_cluster_label] = clusters
             if focal_cluster:
-                section = process_focal_cluster(section, focal_feature=focal_feature, focal_minN=focal_minN, eps=eps)
+                section = process_focal_cluster(section, focal_feature=focal_feature, focal_minN=focal_minN, eps=eps, boxsize=boxsize, scale=scale)
         test_sections.append(section)
         
     return pd.concat(test_sections).reset_index()
@@ -397,7 +406,7 @@ def iter_clustering_one_model(train, test_series, features = ['IntDen','Mean','D
 def iter_all_one_model(train, test, features=["Mean","IntDen","D"],extra_scalers=["IntDen"],
                            cross_validate_one_group=False, CVs = 5,
                        scale='standard',
-                           gamma=0.1, nu=0.1, kernel='rbf', minN=20, eps=128,
+                           gamma=0.1, nu=0.1, kernel='rbf', minN=20, eps=None,
                            focal_cluster=False,focal_minN=5,focal_feature="IntDen",
                            pca=False,n_comps=3,return_pca_model=False,
                           relabel_clusters=True, combine=False, label_unclustered=True, unclustered_reference='proximal_clusters',

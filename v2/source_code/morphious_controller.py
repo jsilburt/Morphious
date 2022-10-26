@@ -20,6 +20,7 @@ import morphious_analysis
 import pandas as pd
 import numpy as np
 import os
+import math
 
 class Controller(object):
     
@@ -83,7 +84,7 @@ class Controller(object):
         self.nu = 0.12
         self.gamma = 0.2
         self.minN = 20
-        self.min_dist = 142
+        self.min_dist = None
         self.cvs = 5
         self.find_focal_clusters = False
         self.focal_minN = 5
@@ -268,6 +269,9 @@ class Controller(object):
                 morphious_gui.close_analysis_frame_warning()
             
     #analysis functions
+    def set_min_dist(self, boxsize, scale):
+        self.min_dist = morphious_cluster.calculate_eps(boxsize, scale)
+
     def load_anal_data(self, protocol):
         """ load the data to be analyzed
         Args:
